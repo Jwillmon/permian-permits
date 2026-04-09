@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Permian Permits · Brix & Co.</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0a1628;
+  --navy2: #0f1f38;
+  --navy3: #162844;
+  --navy4: #1e3356;
+  --gold: #c9a227;
+  --gold2: #e6bc45;
+  --gold3: #f5d675;
+  --text: #e8eef5;
+  --muted: #7a8fa8;
+  --border: rgba(201,162,39,0.15);
+  --border2: rgba(201,162,39,0.3);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--navy);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Header */
+header {
+  background: var(--navy2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-mark {
+  width: 36px;
+  height: 36px;
+  background: var(--gold);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  color: var(--navy);
+  letter-spacing: 1px;
+}
+
+.logo-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+
+.logo-sub {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(201,162,39,0.1);
+  border: 1px solid var(--border2);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--gold);
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.last-update {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Stats bar */
+.stats-bar {
+  background: var(--navy2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+}
+
+.stat-item {
+  padding: 16px 20px;
+  border-right: 1px solid var(--border);
+  text-align: center;
+}
+
+.stat-item:last-child { border-right: none; }
+
+.stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  color: var(--gold);
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.stat-num.red { color: #f87171; }
+
+.stat-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+/* Toolbar */
+.toolbar {
+  padding: 14px 24px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  background: var(--navy);
+  border-bottom: 1px solid var(--border);
+}
+
+.search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+input[type="text"] {
+  width: 100%;
+  background: var(--navy2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 12px 9px 36px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus { border-color: var(--gold); }
+input[type="text"]::placeholder { color: var(--muted); }
+
+select {
+  background: var(--navy2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+select:focus { border-color: var(--gold); }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 12px 24px 0;
+  background: var(--navy);
+}
+
+.tab {
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-bottom: none;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab:hover { color: var(--text); }
+
+.tab.active {
+  background: var(--navy3);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.tab-count {
+  background: var(--gold);
+  color: var(--navy);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-family: 'DM Mono', monospace;
+}
+
+.tab-count.orange { background: #fb923c; }
+
+/* Table */
+.table-container {
+  background: var(--navy3);
+  border: 1px solid var(--border);
+  border-top: none;
+  margin: 0 24px;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+thead th {
+  background: var(--navy2);
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 11px 14px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 64px;
+  cursor: pointer;
+  user-select: none;
+}
+
+thead th:hover { color: var(--gold); }
+
+tbody td {
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: #b8cce0;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+tbody tr:hover td { background: rgba(201,162,39,0.04); }
+tbody tr:last-child td { border-bottom: none; }
+
+/* Badges */
+.type-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.5px;
+}
+
+.type-approved { background: rgba(74,222,128,0.1); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+.type-pending { background: rgba(251,146,60,0.1); color: #fb923c; border: 1px solid rgba(251,146,60,0.2); }
+
+.county-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.c-MIDLAND { background: rgba(55,138,221,0.15); color: #7ab8f5; border: 1px solid rgba(55,138,221,0.25); }
+.c-ECTOR { background: rgba(99,153,34,0.15); color: #a3d96c; border: 1px solid rgba(99,153,34,0.25); }
+.c-ANDREWS { background: rgba(186,117,23,0.15); color: #f5a623; border: 1px solid rgba(186,117,23,0.25); }
+.c-DAWSON { background: rgba(127,119,221,0.15); color: #b8b2f5; border: 1px solid rgba(127,119,221,0.25); }
+.c-REEVES { background: rgba(29,158,117,0.15); color: #5ddcb0; border: 1px solid rgba(29,158,117,0.25); }
+.c-IRION { background: rgba(185,175,15,0.15); color: #ede84a; border: 1px solid rgba(185,175,15,0.25); }
+.c-TOMGREEN { background: rgba(212,83,126,0.15); color: #f589b0; border: 1px solid rgba(212,83,126,0.25); }
+.c-MARTIN { background: rgba(70,180,70,0.15); color: #7fe87f; border: 1px solid rgba(70,180,70,0.25); }
+.c-HOWARD { background: rgba(186,150,23,0.15); color: #f5c97a; border: 1px solid rgba(186,150,23,0.25); }
+
+.flag-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.flag-btn:hover { border-color: var(--gold); color: var(--gold); }
+.flag-btn.flagged { background: var(--gold); border-color: var(--gold); color: var(--navy); font-weight: 500; }
+
+.status-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.s-nc { background: rgba(248,113,113,0.1); color: #f87171; }
+.s-con { background: rgba(74,222,128,0.1); color: #4ade80; }
+
+.no-data {
+  padding: 60px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.no-data-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+/* Footer */
+footer {
+  margin: 16px 24px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.footer-count {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
+.footer-brand {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.footer-brand span { color: var(--gold); }
+
+/* Loading */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Mobile */
+@media (max-width: 640px) {
+  .stats-bar { grid-template-columns: repeat(3, 1fr); }
+  .stat-item:nth-child(4), .stat-item:nth-child(5) { border-top: 1px solid var(--border); }
+  .logo-sub { display: none; }
+  header { padding: 0 16px; }
+  .toolbar { padding: 12px 16px; }
+  .tabs { padding: 10px 16px 0; }
+  .table-container { margin: 0 16px; }
+  footer { margin: 12px 16px 20px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">PP</div>
+    <div>
+      <div class="logo-text">Permian Permits</div>
+      <div class="logo-sub">Brix &amp; Co. Realty · Mineral Pipeline</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      Live Data
+    </div>
+    <div class="last-update" id="lastUpdate">Loading...</div>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-num" id="statTotal">–</div>
+    <div class="stat-label">Total Permits</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num" id="statApproved">–</div>
+    <div class="stat-label">Approved</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num" id="statPending">–</div>
+    <div class="stat-label">Pending</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num" id="statCounties">–</div>
+    <div class="stat-label">Counties</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num red" id="statNC">–</div>
+    <div class="stat-label">Need Contact</div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="search" placeholder="Search operator, lease, county..." oninput="render()">
+  </div>
+  <select id="countyFilter" onchange="render()">
+    <option value="">All Counties</option>
+    <option>MIDLAND</option><option>ECTOR</option><option>ANDREWS</option>
+    <option>DAWSON</option><option>REEVES</option><option>IRION</option>
+    <option>TOM GREEN</option><option>MARTIN</option><option>HOWARD</option>
+  </select>
+  <select id="statusFilter" onchange="render()">
+    <option value="">All Status</option>
+    <option>Not Contacted</option><option>Contacted</option>
+  </select>
+</div>
+
+<div class="tabs">
+  <div class="tab active" id="tab-all" onclick="setTab('all')">
+    All <span class="tab-count" id="cnt-all">0</span>
+  </div>
+  <div class="tab" id="tab-APPROVED" onclick="setTab('APPROVED')">
+    Approved <span class="tab-count" id="cnt-APPROVED">0</span>
+  </div>
+  <div class="tab" id="tab-PENDING" onclick="setTab('PENDING')">
+    Pending <span class="tab-count orange" id="cnt-PENDING">0</span>
+  </div>
+</div>
+
+<div class="table-container">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortBy('type')">Type</th>
+          <th onclick="sortBy('county')">County</th>
+          <th onclick="sortBy('operator')">Operator</th>
+          <th onclick="sortBy('leaseName')">Lease</th>
+          <th onclick="sortBy('permitNum')">Permit #</th>
+          <th onclick="sortBy('wellNum')">Well #</th>
+          <th onclick="sortBy('dateApproved')">Date</th>
+          <th onclick="sortBy('district')">Dist.</th>
+          <th onclick="sortBy('section')">Section</th>
+          <th>Survey</th>
+          <th>Depth</th>
+          <th>Flag</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="no-data" id="nodata" style="display:none">
+      <div class="no-data-icon">◈</div>
+      No permits match your filters.
+    </div>
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      Loading permit data...
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-count" id="footerCount"></div>
+  <div class="footer-brand">Powered by <span>Brix &amp; Co.</span> · Permian Permits</div>
+</footer>
+
+<script>
+const SHEET_ID = '14YyRf-In41XXFH4XNWF1hfQPa1597ZiBcYUqiqEnxM0';
+const APPROVED_SHEET = 'Approved Permits';
+const PENDING_SHEET = 'Pending Permits';
+
+let allData = [];
+let tab = 'all';
+let sortKey = 'dateApproved';
+let sortAsc = false;
+const flags = {};
+
+function countyClass(c) {
+  return 'c-' + c.replace(/\s/g, '');
+}
+
+async function fetchSheet(sheetName) {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+  const res = await fetch(url);
+  const text = await res.text();
+  const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+  const cols = json.table.cols.map(c => c.label);
+  return (json.table.rows || []).map(row => {
+    const obj = {};
+    cols.forEach((col, i) => { obj[col] = row.c[i] ? (row.c[i].v || row.c[i].f || '') : ''; });
+    return obj;
+  });
+}
+
+function mapRow(row, type) {
+  return {
+    type: row['Type'] || type,
+    county: (row['County'] || '').trim(),
+    operator: (row['Operator'] || '').trim(),
+    leaseName: (row['Lease Name'] || '').trim(),
+    permitNum: (row['Permit #'] || '').toString().trim(),
+    wellNum: (row['Well #'] || '').toString().trim(),
+    dateApproved: (row['Date Approved'] || row['Submit Date'] || '').trim(),
+    dateIssued: (row['Date Issued'] || '').trim(),
+    district: (row['District'] || '').trim(),
+    section: (row['Section'] || '').trim(),
+    block: (row['Block'] || '').trim(),
+    survey: (row['Survey'] || '').trim(),
+    totalDepth: (row['Depth'] || '').trim(),
+    status: (row['Contact Status'] || 'Not Contacted').trim(),
+    flag: (row['Flag'] || '').trim() !== '',
+  };
+}
+
+async function loadData() {
+  try {
+    const [approved, pending] = await Promise.all([
+      fetchSheet(APPROVED_SHEET),
+      fetchSheet(PENDING_SHEET)
+    ]);
+    allData = [
+      ...approved.filter(r => r['County']).map(r => mapRow(r, 'APPROVED')),
+      ...pending.filter(r => r['County']).map(r => mapRow(r, 'PENDING')),
+    ];
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('lastUpdate').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'}) + ' CST';
+    updateStats();
+    render();
+  } catch(e) {
+    document.getElementById('loading').innerHTML = '<span style="color:#f87171">Failed to load data. Make sure the sheet is published.</span>';
+    console.error(e);
+  }
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = allData.length;
+  document.getElementById('statApproved').textContent = allData.filter(r=>r.type==='APPROVED').length;
+  document.getElementById('statPending').textContent = allData.filter(r=>r.type==='PENDING').length;
+  document.getElementById('statCounties').textContent = new Set(allData.map(r=>r.county)).size;
+  document.getElementById('statNC').textContent = allData.filter(r=>r.status==='Not Contacted').length;
+  document.getElementById('cnt-all').textContent = allData.length;
+  document.getElementById('cnt-APPROVED').textContent = allData.filter(r=>r.type==='APPROVED').length;
+  document.getElementById('cnt-PENDING').textContent = allData.filter(r=>r.type==='PENDING').length;
+}
+
+function setTab(t) {
+  tab = t;
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  render();
+}
+
+function sortBy(key) {
+  if (sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = true; }
+  render();
+}
+
+function render() {
+  const q = (document.getElementById('search').value || '').toLowerCase();
+  const cf = document.getElementById('countyFilter').value;
+  const sf = document.getElementById('statusFilter').value;
+
+  let rows = allData.map((r,i) => ({...r, idx:i, flag: flags[i] !== undefined ? flags[i] : r.flag}));
+  if (tab !== 'all') rows = rows.filter(r => r.type === tab);
+  if (cf) rows = rows.filter(r => r.county === cf);
+  if (sf) rows = rows.filter(r => r.status === sf);
+  if (q) rows = rows.filter(r => [r.operator,r.leaseName,r.county,r.permitNum,r.survey].join(' ').toLowerCase().includes(q));
+
+  rows.sort((a,b) => {
+    const av = (a[sortKey]||'').toString().toLowerCase();
+    const bv = (b[sortKey]||'').toString().toLowerCase();
+    return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+
+  const tbody = document.getElementById('tbody');
+  const nodata = document.getElementById('nodata');
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '';
+    nodata.style.display = 'block';
+  } else {
+    nodata.style.display = 'none';
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td><span class="type-badge type-${r.type.toLowerCase()}">${r.type}</span></td>
+        <td><span class="county-badge ${countyClass(r.county)}">${r.county}</span></td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis" title="${r.operator}">${r.operator}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${r.leaseName}">${r.leaseName}</td>
+        <td><span style="font-family:'DM Mono',monospace">${r.permitNum}</span></td>
+        <td>${r.wellNum}</td>
+        <td><span style="font-family:'DM Mono',monospace;font-size:11px">${r.dateApproved || r.dateIssued}</span></td>
+        <td>${r.district}</td>
+        <td>${r.section}${r.block?' · Blk '+r.block:''}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:11px" title="${r.survey}">${r.survey}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px">${r.totalDepth?r.totalDepth+"'":''}</td>
+        <td><button class="flag-btn ${r.flag?'flagged':''}" onclick="toggleFlag(${r.idx})">${r.flag?'★ Flagged':'☆ Flag'}</button></td>
+        <td><span class="status-pill ${r.status==='Contacted'?'s-con':'s-nc'}">${r.status}</span></td>
+      </tr>`).join('');
+  }
+
+  document.getElementById('footerCount').textContent = `${rows.length} of ${allData.length} permits`;
+}
+
+function toggleFlag(i) {
+  flags[i] = !(flags[i] !== undefined ? flags[i] : allData[i].flag);
+  render();
+}
+
+loadData();
+</script>
+</body>
+</html>
