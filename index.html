@@ -46,7 +46,8 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 
 /* stats */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-.stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.stat{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--sc,var(--accent));border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.stat.appr{--sc:var(--appr)} .stat.pend{--sc:var(--pend)} .stat.week{--sc:var(--t-new)}
 .stat .l{font-size:12px;color:var(--muted);font-weight:500}
 .stat .n{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
 .stat .s{font-size:12px;color:var(--faint);margin-top:2px}
@@ -54,12 +55,14 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 
 /* type chips */
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.chip{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--ink-2);transition:background .12s,border-color .12s}
-.chip:hover{background:var(--hover)}
+.chip{border:1px solid color-mix(in srgb,var(--tc,var(--border)) 30%,var(--border));background:color-mix(in srgb,var(--tc,transparent) 7%,var(--surface));border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--ink-2);transition:background .12s,border-color .12s}
+.chip:hover{background:color-mix(in srgb,var(--tc,var(--ink)) 14%,var(--surface))}
 .chip .c{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .chip i{width:8px;height:8px;border-radius:50%;background:var(--tc,var(--t-other))}
-.chip.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
-.chip.on .c{color:var(--surface);opacity:.75}
+.chip.on{background:var(--tc,var(--ink));border-color:var(--tc,var(--ink));color:#fff}
+.chip.on i{background:#fff}
+.chip.on[data-t=""],.chip.on[data-t=""] .c{color:var(--surface)}
+.chip.on .c{color:#fff;opacity:.8}
 .chip.zero{opacity:.45}
 
 /* toolbar */
@@ -87,17 +90,23 @@ table{width:100%;border-collapse:separate;border-spacing:0}
 thead th{position:sticky;top:0;z-index:2;background:var(--surface-2);border-bottom:1px solid var(--border);text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:10px 14px;white-space:nowrap;cursor:pointer;user-select:none}
 thead th:hover{color:var(--ink)}
 thead th .arr{display:inline-block;width:10px;margin-left:4px;color:var(--accent)}
-tbody td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:top;white-space:nowrap}
+tbody td{padding:10px 16px;border-bottom:1px solid color-mix(in srgb,var(--border) 70%,transparent);vertical-align:middle;white-space:nowrap;background:color-mix(in srgb,var(--tc,transparent) 5%,var(--surface))}
 tbody tr{cursor:pointer}
-tbody tr:hover td{background:var(--hover)}
+tbody tr td:first-child{box-shadow:inset 4px 0 0 var(--tc,var(--border))}
+tbody tr:hover td{background:color-mix(in srgb,var(--tc,var(--ink)) 12%,var(--surface))}
+tr.grp td{cursor:default;position:sticky;top:39px;z-index:1;background:var(--surface-2);box-shadow:none;border-bottom:1px solid var(--border);padding:9px 16px;font-size:12.5px;font-weight:700;color:var(--ink);letter-spacing:.01em}
+tr.grp td:first-child{box-shadow:none}
+tr.grp .gc{font-weight:500;color:var(--muted);margin-left:8px}
+tr.grp .gd{font-weight:500;color:var(--muted);margin-left:6px}
+.dcell{font-size:13px;color:var(--ink-2);margin-bottom:4px}
 tbody tr:last-child td{border-bottom:0}
 .op{font-weight:600;color:var(--ink);max-width:250px;overflow:hidden;text-overflow:ellipsis}
 .lease{font-weight:500;color:var(--ink-2)}
 .sub{font-size:12px;color:var(--muted)}
 .loc{max-width:230px;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
 .num{text-align:right;font-variant-numeric:tabular-nums}
-.type{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2)}
-.type i{width:8px;height:8px;border-radius:50%;background:var(--tc,var(--t-other));flex:none}
+.type{display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:3px 10px;border-radius:6px;background:color-mix(in srgb,var(--tc,var(--t-other)) 15%,var(--surface));color:color-mix(in srgb,var(--tc,var(--t-other)) 75%,var(--ink))}
+.type i{display:none}
 .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px}
 .pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
 .pill.approved{color:var(--appr);background:var(--appr-bg)}
@@ -112,7 +121,8 @@ tbody tr:last-child td{border-bottom:0}
 
 /* mobile cards */
 .cards{display:none}
-.pcard{padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.pcard{padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;box-shadow:inset 4px 0 0 var(--tc,var(--border));background:color-mix(in srgb,var(--tc,transparent) 5%,var(--surface))}
+.pgrp{padding:9px 16px;background:var(--surface-2);font-weight:700;font-size:12.5px;border-bottom:1px solid var(--border)}
 .pcard:last-child{border-bottom:0}
 .pcard .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .pcard .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;align-items:center}
@@ -141,7 +151,7 @@ tbody tr:last-child td{border-bottom:0}
 
 @media (max-width:900px){
   .stats{grid-template-columns:repeat(2,1fr)}
-  .col-loc,.col-api,.col-depth{display:none}
+  .col-loc{display:none}
 }
 @media (max-width:720px){
   .hdr{padding:10px 16px}
@@ -174,7 +184,7 @@ tbody tr:last-child td{border-bottom:0}
     <div class="stat"><div class="l">Matching permits</div><div class="n" id="sTotal">–</div><div class="s" id="sTotalSub">&nbsp;</div></div>
     <div class="stat appr"><div class="l">Approved</div><div class="n" id="sAppr">–</div><div class="s" id="sApprSub">&nbsp;</div></div>
     <div class="stat pend"><div class="l">Pending</div><div class="n" id="sPend">–</div><div class="s">awaiting RRC approval</div></div>
-    <div class="stat"><div class="l">Filed last 7 days</div><div class="n" id="sWeek">–</div><div class="s" id="sWeekSub">&nbsp;</div></div>
+    <div class="stat week"><div class="l">Filed last 7 days</div><div class="n" id="sWeek">–</div><div class="s" id="sWeekSub">&nbsp;</div></div>
   </section>
 
   <div class="chips" id="chips"></div>
@@ -210,15 +220,12 @@ tbody tr:last-child td{border-bottom:0}
     <div class="tbl-wrap">
       <table>
         <thead><tr>
-          <th data-k="date">Date</th>
+          <th data-k="date">Date / Status</th>
           <th data-k="operator">Operator</th>
           <th data-k="lease">Lease / Well</th>
           <th data-k="county">County</th>
           <th data-k="type">Type</th>
-          <th data-k="status">Status</th>
           <th data-k="loc" class="col-loc">Location</th>
-          <th data-k="depth" class="num col-depth">Depth</th>
-          <th data-k="api" class="col-api">API</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
@@ -367,35 +374,47 @@ function render(){
   writeHash();
 }
 
-function rowHtml(r,i){
+function pillHtml(r){return `<span class="pill ${r.status.toLowerCase()}">${r.status==='APPROVED'?'Approved':'Pending'}</span>`}
+function rowHtml(r,i,grouped){
   const tcol=`var(${TYPE_COLOR[r.type]||'--t-other'})`;
-  return `<tr data-i="${i}">
-    <td><div>${fmtDate(r.date)}</div><div class="sub">${r.status==='APPROVED'&&r.approvedOn?'approved':'filed'}</div></td>
-    <td><div class="op" title="${esc(r.operator)}">${esc(opName(r.operator))}${r.flag?'<span class="star">★</span>':''}</div><div class="sub mono">#${esc(r.statusNo)}</div></td>
+  return `<tr data-i="${i}" style="--tc:${tcol}">
+    <td>${grouped?'':`<div class="dcell">${fmtDate(r.date)}</div>`}${pillHtml(r)}</td>
+    <td><div class="op" title="${esc(r.operator)}">${esc(opName(r.operator))}${r.flag?'<span class="star">★</span>':''}</div></td>
     <td><div class="lease">${esc(r.lease)}</div><div class="sub">Well ${esc(r.well||'—')}${r.profile?' · '+esc(r.profile):''}</div></td>
     <td>${esc(r.county)}</td>
-    <td><span class="type" style="--tc:${tcol}"><i></i>${esc(r.type==='Other'&&r.rawType?r.rawType:r.type)}</span></td>
-    <td><span class="pill ${r.status.toLowerCase()}">${r.status==='APPROVED'?'Approved':'Pending'}</span></td>
+    <td><span class="type">${esc(r.type==='Other'&&r.rawType?r.rawType:r.type)}</span></td>
     <td class="col-loc"><div class="loc" title="${esc(r.loc)}">${esc(r.loc)||'<span class="sub">—</span>'}</div></td>
-    <td class="num col-depth mono">${r.depth?fmtNum(r.depth)+"'":'—'}</td>
-    <td class="col-api mono">${esc(r.api)||'—'}</td>
   </tr>`;
+}
+function groupLabel(d){
+  if(!d)return['No date',''];
+  const long=new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  if(d===daysAgo(0))return['Today',long];if(d===daysAgo(1))return['Yesterday',long];return[long,''];
 }
 function cardHtml(r,i){
   const tcol=`var(${TYPE_COLOR[r.type]||'--t-other'})`;
-  return `<div class="pcard" data-i="${i}">
+  return `<div class="pcard" data-i="${i}" style="--tc:${tcol}">
     <div class="top"><div><div class="op">${esc(opName(r.operator))}${r.flag?'<span class="star">★</span>':''}</div>
       <div class="lease">${esc(r.lease)} <span class="sub">· ${esc(r.well)}</span></div></div>
       <span class="pill ${r.status.toLowerCase()}">${r.status==='APPROVED'?'Approved':'Pending'}</span></div>
-    <div class="meta"><span class="type" style="--tc:${tcol}"><i></i>${esc(r.type)}</span>
+    <div class="meta"><span class="type">${esc(r.type)}</span>
       <span class="sub">${esc(r.county)}</span><span class="sub">${fmtDate(r.date)}</span>${r.depth?`<span class="sub">${fmtNum(r.depth)}'</span>`:''}</div>
     ${r.loc?`<div class="sub" style="margin-top:6px">${esc(r.loc)}</div>`:''}
   </div>`;
 }
 function paint(){
   const rows=view.slice(0,shown);
-  document.getElementById('tbody').innerHTML=rows.map(rowHtml).join('');
-  document.getElementById('cards').innerHTML=rows.map(cardHtml).join('');
+  const grouped=st.sort==='date';
+  const counts={};if(grouped)view.forEach(r=>counts[r.date]=(counts[r.date]||0)+1);
+  let tb='',cd='',last=null;
+  rows.forEach((r,i)=>{
+    if(grouped&&r.date!==last){last=r.date;const[l,d]=groupLabel(r.date);const n=counts[r.date];
+      tb+=`<tr class="grp"><td colspan="6">${esc(l)}${d?`<span class="gd">${esc(d)}</span>`:''}<span class="gc">${n} permit${n===1?'':'s'}</span></td></tr>`;
+      cd+=`<div class="pgrp">${esc(l)}${d?` <span class="sub">${esc(d)}</span>`:''} <span class="sub">· ${n}</span></div>`;}
+    tb+=rowHtml(r,i,grouped);cd+=cardHtml(r,i);
+  });
+  document.getElementById('tbody').innerHTML=tb;
+  document.getElementById('cards').innerHTML=cd;
   document.getElementById('empty').hidden=view.length>0;
   document.getElementById('footCount').textContent=`Showing ${rows.length.toLocaleString()} of ${view.length.toLocaleString()} permits`;
   const more=document.getElementById('moreBtn');more.hidden=view.length<=shown;
@@ -462,7 +481,7 @@ document.getElementById('dTo').addEventListener('change',e=>{st.to=e.target.valu
 let qt;document.getElementById('q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{st.q=e.target.value.trim().toLowerCase();shown=PAGE;render()},150)});
 document.querySelector('thead').addEventListener('click',e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.k;
   if(st.sort===k)st.asc=!st.asc;else{st.sort=k;st.asc=!['date','depth'].includes(k)}render()});
-document.getElementById('tbody').addEventListener('click',e=>{const tr=e.target.closest('tr');if(tr)openDrawer(view[+tr.dataset.i])});
+document.getElementById('tbody').addEventListener('click',e=>{const tr=e.target.closest('tr[data-i]');if(tr)openDrawer(view[+tr.dataset.i])});
 document.getElementById('cards').addEventListener('click',e=>{const c=e.target.closest('.pcard');if(c)openDrawer(view[+c.dataset.i])});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});
 load();
