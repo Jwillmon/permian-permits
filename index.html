@@ -1,663 +1,440 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Permian Permits · Red Beard Resources</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* LIGHT THEME */
-[data-theme="light"]{
-  --bg:#f3eee4;--bg2:#ece5d7;--surface:#fffdf9;--surface2:#f9f5ee;
-  --ink:#1c1612;--ink2:#3a2c24;--muted:#85766a;
-  --border:#e2d9c9;--border2:#cfc3ae;
-  --row-hover:#fbf4e6;--row-alt:#fcf9f3;
-  --thead:#1c1612;--thead-text:#d9c28f;
-  --pill-l:94%;--pill-s:48%;--pill-tl:26%;--pill-bl:80%;
-  --gold:#a8864a;--gold2:#c9a86a;--gold-soft:rgba(168,134,74,.14);
-  --appr:#1f7a4d;--appr-bg:#e6f3ec;--pend:#b36b0f;--pend-bg:#fbf0de;
-}
-/* DARK THEME */
-[data-theme="dark"]{
-  --bg:#0c0a09;--bg2:#15110f;--surface:#1a1513;--surface2:#211b18;
-  --ink:#f3ead9;--ink2:#d2c3ad;--muted:#8a7a68;
-  --border:#2c241e;--border2:#3d3228;
-  --row-hover:#261d17;--row-alt:#1d1815;
-  --thead:#120e0c;--thead-text:#c9a86a;
-  --pill-l:15%;--pill-s:38%;--pill-tl:74%;--pill-bl:28%;
-  --gold:#c9a86a;--gold2:#e2c68e;--gold-soft:rgba(201,168,106,.12);
-  --appr:#5fd39a;--appr-bg:#10271c;--pend:#f0b35a;--pend-bg:#2c1d09;
-}
-
-/* SHARED */
 :root{
-  --crimson:#8b1208;--crimson2:#a81a10;--crimson3:#c4372a;
-  --hdr-from:#5a0c04;--hdr-to:#8b1208;
+  --bg:#f5f6f8; --surface:#ffffff; --surface-2:#f9fafb; --hover:#f3f4f6;
+  --ink:#111827; --ink-2:#374151; --muted:#6b7280; --faint:#9ca3af;
+  --border:#e5e7eb; --border-2:#d1d5db;
+  --accent:#9b1c14; --accent-soft:#fdf1f0; --accent-ink:#ffffff;
+  --appr:#15803d; --appr-bg:#ecfdf3; --pend:#b45309; --pend-bg:#fffbeb;
+  --shadow:0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06);
+  --t-new:#2563eb; --t-amend:#7c3aed; --t-recomp:#0d9488; --t-reclass:#ca8a04; --t-reenter:#ea580c; --t-other:#6b7280;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --surface:#171a21; --surface-2:#1c2029; --hover:#222734;
+  --ink:#f3f4f6; --ink-2:#d1d5db; --muted:#9ca3af; --faint:#6b7280;
+  --border:#2a2f3a; --border-2:#374151;
+  --accent:#ef5a4c; --accent-soft:#2a1715; --accent-ink:#ffffff;
+  --appr:#4ade80; --appr-bg:#0f2a1b; --pend:#fbbf24; --pend-bg:#2b2110;
+  --shadow:none;
+  --t-new:#60a5fa; --t-amend:#a78bfa; --t-recomp:#2dd4bf; --t-reclass:#facc15; --t-reenter:#fb923c; --t-other:#9ca3af;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+html,body{background:var(--bg);color:var(--ink);font:14px/1.45 'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px}
 
-/* HEADER */
-header{
-  background:radial-gradient(120% 180% at 50% 0%,#9c1a0e 0%,#6a0f06 45%,#2a0602 100%);border-bottom:2px solid #c9a86a;
-  padding:0 28px;height:88px;
-  display:grid;grid-template-columns:220px 1fr 220px;
-  align-items:center;gap:16px;
-  position:sticky;top:0;z-index:200;
-  box-shadow:0 6px 30px rgba(40,4,0,0.45);
-}
-.hdr-logo{
-  background:#fffdf9;border:1px solid #c9a86a;border-radius:10px;
-  padding:10px 16px;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 2px 12px rgba(0,0,0,0.25);
-}
-.hdr-logo img{height:54px;object-fit:contain;display:block}
-.hdr-center{text-align:center}
-.hdr-title{
-  font-family:'Cormorant Garamond',serif;
-  font-size:40px;font-weight:600;
-  letter-spacing:7px;text-transform:uppercase;
-  color:#fbf3e4;line-height:1;text-shadow:0 2px 12px rgba(0,0,0,.35);
-}
-.hdr-subtitle{
-  font-size:10px;letter-spacing:4px;text-transform:uppercase;
-  color:#d9c28f;margin-top:8px;font-weight:400;opacity:.85;
-}
-.hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-.live-pill{
-  display:flex;align-items:center;gap:6px;
-  background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.25);
-  padding:6px 14px;border-radius:20px;font-size:11px;color:#fff;letter-spacing:1px;
-}
-.live-dot{width:6px;height:6px;background:#fff;border-radius:50%;animation:blink 2s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
-.upd-time{font-size:10px;color:rgba(255,255,255,0.45);text-align:right}
-.theme-toggle{
-  background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.25);
-  color:#fff;padding:6px 14px;border-radius:20px;
-  font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;
-  letter-spacing:0.5px;transition:background .15s;display:flex;align-items:center;gap:6px;
-}
-.theme-toggle:hover{background:rgba(255,255,255,0.22)}
+/* header */
+header{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:30}
+.hdr{max-width:1320px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:14px}
+.logo{height:36px;width:auto;border-radius:6px;background:#fff;padding:2px 6px}
+.brand h1{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.brand p{font-size:12px;color:var(--muted)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.updated{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--appr);box-shadow:0 0 0 3px var(--appr-bg)}
+.icon-btn{border:1px solid var(--border);background:var(--surface);border-radius:8px;height:34px;padding:0 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2)}
+.icon-btn:hover{background:var(--hover)}
 
-/* STATS */
-.stats{
-  display:grid;grid-template-columns:repeat(4,1fr);
-  background:var(--surface);border-bottom:1px solid var(--border);
-  transition:background .2s;
-}
-.stat{padding:24px 0 20px;text-align:center;border-right:1px solid var(--border);position:relative}
-.stat::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:36px;height:2px;background:var(--gold)}
-#statApproved{color:var(--appr)}#statPending{color:var(--pend)}#statCounties{color:var(--gold)}
-.stat-click{cursor:pointer;transition:background .15s}
-.stat-click:hover{background:var(--gold-soft)}
-.stat:last-child{border-right:none}
-.stat-n{
-  font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:600;
-  color:var(--crimson2);line-height:1;
-}
-.stat-n.alert{color:var(--crimson3)}
-.stat-l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:2.5px;margin-top:8px;font-weight:600}
+main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 
-/* CONTROLS */
-.controls{
-  padding:16px 28px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
-  background:var(--surface);border-bottom:1px solid var(--border);transition:background .2s;
-}
-.search-wrap{position:relative;flex:1;min-width:200px}
-.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none}
-input[type=text]{
-  width:100%;background:var(--bg2);border:1.5px solid var(--border2);
-  color:var(--ink);padding:12px 14px 12px 38px;border-radius:8px;
-  font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:all .2s;
-}
-input[type=text]:focus{border-color:var(--gold);background:var(--surface);box-shadow:0 0 0 3px rgba(139,18,8,0.1)}
-input[type=text]::placeholder{color:var(--muted)}
-select{
-  background:var(--bg2);border:1.5px solid var(--border2);color:var(--ink);
-  padding:12px 36px 12px 14px;border-radius:8px;font-size:14px;
-  font-family:'Inter',sans-serif;outline:none;cursor:pointer;
-  appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a60'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 14px center;transition:border-color .2s;
-}
-select:focus{border-color:var(--gold)}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.stat .l{font-size:12px;color:var(--muted);font-weight:500}
+.stat .n{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+.stat .s{font-size:12px;color:var(--faint);margin-top:2px}
+.stat.appr .n{color:var(--appr)} .stat.pend .n{color:var(--pend)}
 
-/* TABS */
-.tabs{display:flex;gap:2px;padding:18px 28px 0;background:var(--bg);transition:background .2s}
-.tab{
-  padding:10px 22px;border-radius:7px 7px 0 0;cursor:pointer;color:var(--muted);
-  border:1.5px solid transparent;border-bottom:none;
-  display:flex;align-items:center;gap:8px;transition:all .15s;
-  font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;
-}
-.tab:hover{color:var(--ink)}
-.tab.active{background:var(--surface);color:var(--ink);border-color:var(--border);box-shadow:inset 0 2px 0 var(--gold)}
-.tcnt{background:var(--crimson2);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace;letter-spacing:0}
-.tcnt.orange{background:var(--pend)}
-#cnt-APPROVED{background:var(--appr)}
-[data-theme="dark"] .tcnt{color:#120e0c}
+/* type chips */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--ink-2);transition:background .12s,border-color .12s}
+.chip:hover{background:var(--hover)}
+.chip .c{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--tc,var(--t-other))}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.chip.on .c{color:var(--surface);opacity:.75}
+.chip.zero{opacity:.45}
 
-/* TABLE */
-.tbl-container{
-  background:var(--surface);border:1px solid var(--border2);border-top:none;
-  margin:0 28px;border-radius:0 0 10px 10px;overflow:hidden;
-  box-shadow:0 4px 24px rgba(0,0,0,0.08);transition:background .2s;
-}
-.tbl-scroll{overflow-x:auto;max-height:calc(100vh - 320px);overflow-y:auto}
-table{width:100%;border-collapse:collapse}
-thead{position:sticky;top:0;z-index:10}
-thead th{
-  background:var(--thead);color:var(--thead-text);font-weight:600;
-  font-size:10px;text-transform:uppercase;letter-spacing:1.5px;
-  padding:13px 16px;text-align:left;white-space:nowrap;
-  border-bottom:2px solid var(--gold);cursor:pointer;user-select:none;transition:background .2s;
-}
-thead th:hover{color:#fbf3e4}
-tbody td{
-  padding:14px 16px;border-bottom:1px solid var(--border);
-  font-size:14px;color:var(--ink2);white-space:nowrap;vertical-align:middle;
-  transition:background .2s;
-}
-tbody tr:nth-child(even) td{background:var(--row-alt)}
-tbody tr:hover td{background:var(--row-hover) !important}
-tbody tr:last-child td{border-bottom:none}
+/* toolbar */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.search{position:relative;flex:1 1 260px;min-width:220px}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--faint)}
+.search input{width:100%;height:38px;border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:0 12px 0 34px;outline:none}
+.search input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+select{height:38px;border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:0 30px 0 12px;appearance:none;cursor:pointer;outline:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239ca3af' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:3px;height:38px}
+.seg button{border:0;background:none;padding:0 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted)}
+.seg button.on{background:var(--hover);color:var(--ink)}
+.spacer{flex:1}
 
-/* BADGES — light versions */
-.type-b{display:inline-block;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
-.t-approved{background:var(--appr-bg);color:var(--appr);border:1px solid color-mix(in srgb,var(--appr) 40%,transparent)}
-.t-pending{background:var(--pend-bg);color:var(--pend);border:1px solid color-mix(in srgb,var(--pend) 40%,transparent)}
-.t-approved::before,.t-pending::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:1px}
-tr.row-approved td:first-child{box-shadow:inset 3px 0 0 var(--appr)}
-tr.row-pending td:first-child{box-shadow:inset 3px 0 0 var(--pend)}
-
-.county-b,.ptype{display:inline-block;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.2px;
-  background:hsl(var(--h,35) var(--pill-s) var(--pill-l));color:hsl(var(--h,35) 55% var(--pill-tl));border:1px solid hsl(var(--h,35) 40% var(--pill-bl))}
-.ptype{border-radius:5px;font-size:11px;padding:4px 9px;text-transform:uppercase;letter-spacing:.8px}
-.ptype.neutral,.county-b.neutral{--pill-s:8%}
-.date-sub{display:block;font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase}
-
-
-.flag-btn{
-  display:inline-flex;align-items:center;gap:5px;
-  background:transparent;border:1.5px solid var(--border2);
-  color:var(--muted);padding:6px 14px;border-radius:6px;
-  font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;
-  transition:all .15s;white-space:nowrap;
-}
-.flag-btn:hover{border-color:var(--crimson2);color:var(--crimson2)}
-.flag-btn.flagged{background:var(--gold);border-color:var(--gold);color:#1c1612}
-.flag-btn:hover{border-color:var(--gold)!important;color:var(--gold)}
-
-.mono{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted)}
-.dim{color:var(--muted);font-size:13px}
-
-.no-data{padding:80px;text-align:center;color:var(--muted);font-size:14px}
-.loading{display:flex;align-items:center;justify-content:center;padding:80px;gap:12px;color:var(--muted);font-size:14px}
-.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--crimson2);border-radius:50%;animation:spin .8s linear infinite}
+/* table */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.tbl-wrap{overflow:auto;max-height:calc(100vh - 330px);min-height:320px}
+table{width:100%;border-collapse:separate;border-spacing:0}
+thead th{position:sticky;top:0;z-index:2;background:var(--surface-2);border-bottom:1px solid var(--border);text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:10px 14px;white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--ink)}
+thead th .arr{display:inline-block;width:10px;margin-left:4px;color:var(--accent)}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:top;white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--hover)}
+tbody tr:last-child td{border-bottom:0}
+.op{font-weight:600;color:var(--ink);max-width:250px;overflow:hidden;text-overflow:ellipsis}
+.lease{font-weight:500;color:var(--ink-2)}
+.sub{font-size:12px;color:var(--muted)}
+.loc{max-width:230px;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.type{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2)}
+.type i{width:8px;height:8px;border-radius:50%;background:var(--tc,var(--t-other));flex:none}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px}
+.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.approved{color:var(--appr);background:var(--appr-bg)}
+.pill.pending{color:var(--pend);background:var(--pend-bg)}
+.star{color:var(--accent);margin-left:6px}
+.empty,.loading{padding:70px 20px;text-align:center;color:var(--muted)}
+.spin{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;vertical-align:-4px;margin-right:8px}
 @keyframes spin{to{transform:rotate(360deg)}}
+.foot{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);background:var(--surface-2)}
+.more{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12.5px}
+.more:hover{background:var(--hover)}
 
-footer{margin:16px 28px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-.f-count{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace}
-.f-brand{font-size:12px;color:var(--muted)}
-.f-brand strong{color:var(--gold);font-weight:600;letter-spacing:.5px}
+/* mobile cards */
+.cards{display:none}
+.pcard{padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.pcard:last-child{border-bottom:0}
+.pcard .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.pcard .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;align-items:center}
 
-/* MOBILE */
-@media(max-width:900px){
-  header{grid-template-columns:160px 1fr auto;height:76px;padding:0 16px}
-  .hdr-logo img{height:44px}
-  .hdr-title{font-size:28px;letter-spacing:4px}
-  .hdr-right{gap:6px}
-  .upd-time{display:none}
-}
-@media(max-width:640px){
-  header{grid-template-columns:1fr auto;height:68px}
-  .hdr-logo{display:none}
-  .hdr-title{font-size:22px;letter-spacing:3px}
-  .hdr-subtitle{display:none}
-  .live-pill{padding:5px 10px;font-size:10px}
-  .stats{grid-template-columns:repeat(3,1fr)}
-  .stat:nth-child(4),.stat:nth-child(5){border-top:1px solid var(--border)}
-  .stat-n{font-size:32px}
-  .controls,.tabs{padding-left:16px;padding-right:16px}
-  .tbl-container{margin:0 16px}
-  footer{margin:12px 16px 20px}
-  .col-district,.col-survey,.col-depth{display:none}
-  .col-well,.col-date{display:none}
-}
-@media(max-width:480px){
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(17,24,39,.35);opacity:0;pointer-events:none;transition:opacity .18s;z-index:40}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(440px,100%);background:var(--surface);border-left:1px solid var(--border);z-index:41;transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.d-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
+.d-head h2{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.d-head p{color:var(--muted);font-size:13px;margin-top:2px}
+.d-close{margin-left:auto;border:0;background:var(--hover);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;color:var(--ink-2)}
+.d-body{padding:18px 20px;overflow:auto}
+.d-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.grid div{padding:10px 12px;border-bottom:1px solid var(--border)}
+.grid div:nth-child(odd){border-right:1px solid var(--border)}
+.grid .full{grid-column:1/-1;border-right:0!important}
+.grid dt{font-size:11.5px;color:var(--muted);font-weight:500}
+.grid dd{font-size:14px;font-weight:500;margin-top:2px;word-break:break-word}
+.d-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.d-actions a{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-decoration:none;color:var(--ink-2);font-size:13px}
+.d-actions a:hover{background:var(--hover)}
+.notes{margin-top:14px;padding:10px 12px;background:var(--accent-soft);border-radius:8px;font-size:13px}
+
+@media (max-width:900px){
   .stats{grid-template-columns:repeat(2,1fr)}
+  .col-loc,.col-api,.col-depth{display:none}
 }
-
-/* DETAIL CARD MODAL */
-.modal-overlay{
-  display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-  background:rgba(0,0,0,0.5);z-index:1000;
-  align-items:center;justify-content:center;padding:20px;
+@media (max-width:720px){
+  .hdr{padding:10px 16px}
+  .brand p,.updated span.long{display:none}
+  main{padding:14px 16px 32px}
+  .stat .n{font-size:22px}
+  .tbl-wrap{display:none}
+  .cards{display:block}
+  .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;margin-right:-16px}
+  .chip{flex:none}
+  .toolbar select,.seg{flex:1 1 auto}
 }
-.modal-overlay.open{display:flex}
-.modal-card{
-  background:var(--surface);border-radius:12px;
-  border:1.5px solid var(--border);
-  width:100%;max-width:520px;max-height:90vh;overflow-y:auto;
-  box-shadow:0 20px 60px rgba(0,0,0,0.2);
-}
-.modal-header{
-  background:radial-gradient(120% 200% at 0% 0%,#9c1a0e,#3a0803);border-bottom:2px solid #c9a86a;
-  padding:16px 20px;border-radius:10px 10px 0 0;
-  display:flex;justify-content:space-between;align-items:flex-start;
-}
-.modal-header-left{}
-.modal-type{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:4px}
-.modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:#fff;line-height:1.2}
-.modal-operator{font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px}
-.modal-close{
-  background:rgba(255,255,255,0.15);border:none;color:#fff;
-  width:32px;height:32px;border-radius:50%;font-size:18px;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;margin-left:12px;
-}
-.modal-close:hover{background:rgba(255,255,255,0.25)}
-.modal-body{padding:20px}
-.modal-county{display:inline-block;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600;margin-bottom:16px}
-.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.modal-field{background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:2px solid var(--gold)}
-.modal-field-label{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600;margin-bottom:4px}
-.modal-field-value{font-size:14px;color:var(--ink);font-weight:500}
-.modal-field-value.mono{font-family:'JetBrains Mono',monospace;font-size:13px}
-.modal-field.full{grid-column:1/-1}
-.modal-actions{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px}
-.modal-flag-btn{
-  flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:500;
-  cursor:pointer;font-family:'Inter',sans-serif;border:1.5px solid var(--border2);
-  background:transparent;color:var(--muted);transition:all .15s;
-}
-.modal-flag-btn:hover{border-color:var(--crimson2);color:var(--crimson2)}
-.modal-flag-btn.flagged{background:var(--crimson2);border-color:var(--crimson2);color:#fff}
-tbody tr{cursor:pointer;-webkit-tap-highlight-color:rgba(139,18,8,0.1);touch-action:manipulation}
-tbody tr:hover td{background:var(--row-hover) !important}
-
+@media (max-width:480px){.logo{display:none}.brand h1{font-size:16px}}
 </style>
 </head>
 <body>
-
 <header>
-  <div class="hdr-logo">
-    <img src="redbeard-logo.png" alt="Red Beard Resources">
-  </div>
-  <div class="hdr-center">
-    <div class="hdr-title">Permian Permits</div>
-    <div class="hdr-subtitle">Red Beard Resources</div>
-  </div>
-  <div class="hdr-right">
-    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">☀ Light</button>
-    <div class="live-pill"><div class="live-dot"></div>Live Data</div>
-    <div class="upd-time" id="lastUpdate">Loading...</div>
+  <div class="hdr">
+    <img class="logo" src="redbeard-logo.png" alt="Red Beard Resources">
+    <div class="brand"><h1>Permian Permits</h1><p>RRC drilling permits · Red Beard Resources</p></div>
+    <div class="hdr-right">
+      <div class="updated"><span class="dot"></span><span id="lastUpdate">Loading…</span></div>
+      <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+    </div>
   </div>
 </header>
 
-<div class="stats">
-  <div class="stat stat-click" onclick="setTab('all')" title="Show all permits"><div class="stat-n" id="statTotal">–</div><div class="stat-l">Total Permits</div></div>
-  <div class="stat stat-click" onclick="setTab('APPROVED')" title="Show approved permits"><div class="stat-n" id="statApproved">–</div><div class="stat-l">Approved</div></div>
-  <div class="stat stat-click" onclick="setTab('PENDING')" title="Show pending permits"><div class="stat-n" id="statPending">–</div><div class="stat-l">Pending</div></div>
-  <div class="stat"><div class="stat-n" id="statCounties">–</div><div class="stat-l">Counties</div></div>
+<main>
+  <section class="stats">
+    <div class="stat"><div class="l">Matching permits</div><div class="n" id="sTotal">–</div><div class="s" id="sTotalSub">&nbsp;</div></div>
+    <div class="stat appr"><div class="l">Approved</div><div class="n" id="sAppr">–</div><div class="s" id="sApprSub">&nbsp;</div></div>
+    <div class="stat pend"><div class="l">Pending</div><div class="n" id="sPend">–</div><div class="s">awaiting RRC approval</div></div>
+    <div class="stat"><div class="l">Filed last 7 days</div><div class="n" id="sWeek">–</div><div class="s" id="sWeekSub">&nbsp;</div></div>
+  </section>
 
-</div>
+  <div class="chips" id="chips"></div>
 
-<div class="controls">
-  <div class="search-wrap">
-    <span class="search-icon">⌕</span>
-    <input type="text" id="search" placeholder="Search operator, lease, county, permit..." oninput="render()">
+  <div class="toolbar">
+    <label class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Search operator, lease, survey, API, status #" autocomplete="off">
+    </label>
+    <select id="county" aria-label="County"><option value="">All counties</option></select>
+    <select id="range" aria-label="Filed within">
+      <option value="">Any date</option><option value="7">Filed last 7 days</option>
+      <option value="30">Filed last 30 days</option><option value="60">Filed last 60 days</option>
+    </select>
+    <div class="seg" id="statusSeg">
+      <button data-v="" class="on">All</button><button data-v="APPROVED">Approved</button><button data-v="PENDING">Pending</button>
+    </div>
+    <button class="icon-btn" onclick="exportCsv()" title="Download the filtered list">↓ CSV</button>
   </div>
-  <select id="regionFilter" onchange="buildCountyOptions();render()">
-    <option value="permian">Permian Basin</option>
-    <option value="all">All Texas</option>
-  </select>
-  <select id="countyFilter" onchange="render()">
-    <option value="">All Counties</option>
-  </select>
-  <select id="typeFilter" onchange="render()">
-    <option value="">All Permit Types</option>
-  </select>
-</div>
 
-<div class="tabs">
-  <div class="tab active" id="tab-all" onclick="setTab('all')">All <span class="tcnt" id="cnt-all">0</span></div>
-  <div class="tab" id="tab-APPROVED" onclick="setTab('APPROVED')">Approved <span class="tcnt" id="cnt-APPROVED">0</span></div>
-  <div class="tab" id="tab-PENDING" onclick="setTab('PENDING')">Pending <span class="tcnt orange" id="cnt-PENDING">0</span></div>
-</div>
-
-<div class="tbl-container">
-  <div class="tbl-scroll">
-    <table>
-      <thead>
-        <tr>
-          <th onclick="sortBy('status')">Status</th>
-          <th onclick="sortBy('permitType')">Type</th>
-          <th onclick="sortBy('county')">County</th>
-          <th onclick="sortBy('operator')">Operator</th>
-          <th onclick="sortBy('leaseName')">Lease</th>
-          <th onclick="sortBy('statusNum')">Status #</th>
-          <th onclick="sortBy('wellNum')" class="col-well">Well #</th>
-          <th onclick="sortBy('date')" class="col-date">Date</th>
-          <th onclick="sortBy('district')" class="col-district">District</th>
-          <th onclick="sortBy('section')" class="col-section">Section</th>
-          <th class="col-survey">Survey</th>
-          <th class="col-depth">Depth</th>
-          <th>Flag</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    <div class="no-data" id="nodata" style="display:none">No permits match your filters.</div>
-    <div class="loading" id="loading"><div class="spinner"></div>Loading permit data...</div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th data-k="date">Date</th>
+          <th data-k="operator">Operator</th>
+          <th data-k="lease">Lease / Well</th>
+          <th data-k="county">County</th>
+          <th data-k="type">Type</th>
+          <th data-k="status">Status</th>
+          <th data-k="loc" class="col-loc">Location</th>
+          <th data-k="depth" class="num col-depth">Depth</th>
+          <th data-k="api" class="col-api">API</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="loading" id="loading"><span class="spin"></span>Loading permits…</div>
+      <div class="empty" id="empty" hidden>No permits match these filters.</div>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div class="foot"><span id="footCount"></span><button class="more" id="moreBtn" hidden onclick="showMore()">Show more</button></div>
   </div>
-</div>
+</main>
 
-<footer>
-  <div class="f-count" id="footerCount"></div>
-  <div class="f-brand">Permian Permits &nbsp;·&nbsp; <strong>Red Beard Resources</strong></div>
-</footer>
+<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="d-head">
+    <div><h2 id="dTitle"></h2><p id="dSub"></p></div>
+    <button class="d-close" onclick="closeDrawer()" aria-label="Close">✕</button>
+  </div>
+  <div class="d-body" id="dBody"></div>
+</aside>
 
 <script>
 const SHEET_ID='14YyRf-In41XXFH4XNWF1hfQPa1597ZiBcYUqiqEnxM0';
-let allData=[];let tab='all';let sortKey='date';let sortAsc=false;const flags={};
+const TYPE_ORDER=['New Drill','Amendment','Recompletion','Reclass','Re-Enter','Reapplied','Field Transfer','Other'];
+const TYPE_COLOR={'New Drill':'--t-new','Amendment':'--t-amend','Recompletion':'--t-recomp','Reclass':'--t-reclass','Re-Enter':'--t-reenter'};
+const PAGE=250;
+let all=[], view=[], shown=PAGE;
+const st={type:'',status:'',county:'',range:'',q:'',sort:'date',asc:false};
 
-// Theme toggle
-let theme=localStorage.getItem('pp-theme')||'light';
-document.documentElement.setAttribute('data-theme',theme);
-document.getElementById('themeBtn').textContent=theme==='light'?'☾ Dark':'☀ Light';
+/* theme */
+(function(){let t=null;try{t=localStorage.getItem('pp-theme')}catch(e){}
+  if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  document.documentElement.dataset.theme=t;})();
+function toggleTheme(){const t=document.documentElement.dataset.theme==='dark'?'light':'dark';
+  document.documentElement.dataset.theme=t;try{localStorage.setItem('pp-theme',t)}catch(e){}}
 
-function toggleTheme(){
-  theme=theme==='light'?'dark':'light';
-  document.documentElement.setAttribute('data-theme',theme);
-  document.getElementById('themeBtn').textContent=theme==='light'?'☾ Dark':'☀ Light';
-  localStorage.setItem('pp-theme',theme);
-}
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const title=s=>String(s||'').toLowerCase().replace(/\b[a-z]/g,m=>m.toUpperCase());
+const KEEP=new Set(['LLC','LP','LLP','INC','LTD','II','III','IV','USA','XTO','EOG','BTA','OXY','VTX','PDEH','SM','CO','OOA','US','TX','NM']);
+const opName=s=>title(s).replace(/\b[\w&]+\b/g,w=>KEEP.has(w.toUpperCase())?w.toUpperCase():w);
+const fmtDate=d=>{if(!d)return'—';const[y,m,dd]=d.split('-');return new Date(+y,+m-1,+dd).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
+const fmtNum=n=>n?Number(n).toLocaleString('en-US'):'';
+const typeKey=t=>{t=(t||'').trim();if(/^re-?enter$/i.test(t))return'Re-Enter';return TYPE_ORDER.includes(t)?t:(t?'Other':'Other')};
 
-function cc(c){return 'c'+(c||'').toUpperCase().replace(/\s/g,'')}
-// Color coding: every county gets its own hue (golden-angle spread so neighbors never clash); permit types get fixed jewel tones
-const TYPE_HUE={'NEW DRILL':212,'AMENDMENT':282,'RECOMPLETION':174,'REAPPLIED':28,'RE-ENTRY':340,'FIELD TRANSFER':52};
-function typeHue(t){const h=TYPE_HUE[(t||'').toUpperCase()];return h==null?'class="ptype neutral"':`class="ptype" style="--h:${h}"`;}
-const _ch={};
-function countyHue(c){if(!(c in _ch)){const i=[...PERMIAN].indexOf(c);let x=0;for(const ch of c)x=(x*31+ch.charCodeAt(0))>>>0;_ch[c]=i>=0?Math.round(i*137.508)%360:x%360;}return _ch[c];}
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
-function titleCase(s){return s.toLowerCase().replace(/\b[a-z]/g,m=>m.toUpperCase())}
-
-// Texas counties treated as Permian Basin (Midland Basin, Delaware Basin, Central Basin Platform + fringe)
-const PERMIAN=new Set(['ANDREWS','BORDEN','COCHRAN','COKE','CRANE','CROCKETT','CULBERSON','DAWSON','ECTOR','GAINES','GARZA','GLASSCOCK','HOCKLEY','HOWARD','IRION','JEFF DAVIS','KENT','LOVING','LYNN','MARTIN','MIDLAND','MITCHELL','NOLAN','PECOS','REAGAN','REEVES','SCHLEICHER','SCURRY','STERLING','TERRY','TOM GREEN','UPTON','WARD','WINKLER','YOAKUM']);
-
-const TODAY=new Date().toISOString().slice(0,10);
-
-async function fetchSheet(name){
-  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json${name?'&sheet='+encodeURIComponent(name):''}&headers=1`;
-  const res=await fetch(url,{cache:'no-store'});const text=await res.text();
+async function fetchSheet(){
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('Pending Permits')}&headers=1`;
+  const text=await (await fetch(url,{cache:'no-store'})).text();
   const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-  if(json.status==='error')throw new Error((json.errors||[]).map(e=>e.detailed_message||e.message).join('; ')||'Sheet error');
-  const t=json.table;if(!t||!t.rows||!t.rows.length)return[];
-  let cols=t.cols.map(c=>c.label);let rows=t.rows;
-  if(!cols[0]||cols[0]===''){cols=t.rows[0].c.map(c=>c?(c.v||''):'');rows=t.rows.slice(1);}
-  return rows.map(r=>{const o={};cols.forEach((c,i)=>{const cell=r.c[i];o[c]=cell?(cell.f!=null&&typeof cell.v!=='string'?cell.f:(cell.v!=null?cell.v:'')):'';});return o;});
+  if(json.status==='error')throw new Error('sheet error');
+  const t=json.table;if(!t||!t.rows)return[];
+  let cols=t.cols.map(c=>c.label),rows=t.rows;
+  if(!cols[0]){cols=rows[0].c.map(c=>c?(c.v||''):'');rows=rows.slice(1)}
+  return rows.map(r=>{const o={};cols.forEach((c,i)=>{const cell=r.c[i];o[c]=cell?(cell.f!=null&&typeof cell.v!=='string'?cell.f:(cell.v??'')):''});return o});
 }
-
-const s=v=>(v==null?'':String(v)).trim();
+const g=(r,k)=>String(r[k]??'').trim();
 
 function mapRow(r){
-  const statusRaw=s(r['Contact Status']).toUpperCase();
-  const apprRaw=s(r['Date Approved']);
-  // For amendments the scraper writes the permit EXPIRATION date into "Date Approved" (≈2 yrs out). Anything in the future is an expiration, not an approval.
-  const future=apprRaw&&apprRaw>TODAY;
+  const approved=g(r,'Contact Status').toUpperCase()==='APPROVED';
+  const appr=g(r,'Date Approved'), sub=g(r,'Submit Date');
+  const today=new Date().toISOString().slice(0,10);
+  const apprOk=appr&&appr<=today?appr:'';
+  const sec=g(r,'Section'),blk=g(r,'Block'),sur=g(r,'Survey'),abs=g(r,'Abstract');
   return{
-    status:statusRaw==='APPROVED'?'APPROVED':'PENDING',
-    permitType:s(r['Type'])||'—',
-    county:s(r['County']).toUpperCase(),
-    operator:s(r['Operator']).replace(/ OOA$/,''),
-    leaseName:s(r['Lease Name']),
-    permitNum:s(r['Permit #']),
-    statusNum:s(r['Status #']),
-    wellNum:s(r['Well #']),
-    dateApproved:future?'':apprRaw,
-    expires:future?apprRaw:'',
-    submitDate:s(r['Submit Date']),
-    district:s(r['District']),
-    section:s(r['Section']),block:s(r['Block']),
-    survey:s(r['Survey']),abstract:s(r['Abstract']),totalDepth:s(r['Depth']),
-    notes:s(r['Notes']),
-    scrapedAt:s(r['Scraped At']),
-    flag:s(r['Flag'])!=='',
-    get date(){return this.dateApproved||this.submitDate},
+    status:approved?'APPROVED':'PENDING',
+    type:typeKey(g(r,'Type')), rawType:g(r,'Type'),
+    county:title(g(r,'County')),
+    operator:g(r,'Operator').replace(/ OOA$/,''),
+    lease:g(r,'Lease Name'), well:g(r,'Well #'),
+    statusNo:g(r,'Status #'), docNo:g(r,'Permit #'),
+    approvedOn:apprOk, submitted:sub, date:(approved&&apprOk)||sub,
+    district:g(r,'District'), section:sec, block:blk, survey:sur, abstract:abs,
+    loc:[sec&&('Sec '+sec),blk&&('Blk '+blk),sur].filter(Boolean).join(' · '),
+    depth:g(r,'Depth').replace(/\D/g,''), api:g(r,'API #'), profile:g(r,'Wellbore Profile'),
+    queue:g(r,'RRC Queue'), flag:g(r,'Flag')!=='', notes:g(r,'Notes'), scraped:g(r,'Scraped At'),
   };
 }
+function isJunk(r){return !r.county || (/^[A-Z_]+$/.test(r.docNo)&&r.docNo.includes('_'))}
 
-function isJunk(r){
-  // Drops blank rows and leftover RRC column-header rows (e.g. "UNIVERSAL_DOC_NO", "OPERATOR_NAME")
-  if(!r.county)return true;
-  return /^[A-Z_]+$/.test(r.permitNum)&&r.permitNum.includes('_');
-}
-
-async function loadData(){
+async function load(){
   try{
-    let raw;
-    try{raw=await fetchSheet('Pending Permits');}catch(e){raw=await fetchSheet('');}
-    // One row per RRC document number: keep the most recently scraped copy
+    const raw=await fetchSheet();
     const byKey=new Map();
-    raw.map(mapRow).filter(r=>!isJunk(r)).forEach(r=>{
-      const k=r.permitNum||(r.statusNum+'|'+r.permitType)||(r.leaseName+'|'+r.wellNum+'|'+r.county);
-      const prev=byKey.get(k);
-      if(!prev||r.scrapedAt>=prev.scrapedAt)byKey.set(k,r);
-    });
-    allData=[...byKey.values()];
-    document.getElementById('loading').style.display='none';
-    const last=allData.map(r=>r.scrapedAt).filter(Boolean).sort().pop();
-    let upd='Updated —';
+    raw.map(mapRow).filter(r=>!isJunk(r)).forEach(r=>{const k=r.statusNo||r.docNo;const p=byKey.get(k);if(!p||r.scraped>=p.scraped)byKey.set(k,r)});
+    all=[...byKey.values()];
+    const last=all.map(r=>r.scraped).filter(Boolean).sort().pop();
     if(last){const d=new Date(last.replace(' UTC','Z').replace(' ','T'));
-      if(!isNaN(d))upd='Scraper last ran '+d.toLocaleString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' CT';}
-    document.getElementById('lastUpdate').textContent=upd;
-    const types=[...new Set(allData.map(r=>r.permitType))].sort();
-    document.getElementById('typeFilter').innerHTML='<option value="">All Permit Types</option>'+types.map(t=>`<option>${esc(t)}</option>`).join('');
-    buildCountyOptions();render();
-  }catch(e){
-    document.getElementById('loading').innerHTML='<span style="color:var(--crimson2)">Unable to load data.</span>';
-    console.error(e);
-  }
+      if(!isNaN(d))document.getElementById('lastUpdate').innerHTML='<span class="long">Updated </span>'+d.toLocaleString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' CT';}
+    const counties=[...new Set(all.map(r=>r.county))].sort();
+    document.getElementById('county').innerHTML='<option value="">All counties ('+counties.length+')</option>'+counties.map(c=>`<option>${esc(c)}</option>`).join('');
+    document.getElementById('loading').remove();
+    readHash(); render();
+  }catch(e){console.error(e);document.getElementById('loading').innerHTML='Couldn\'t load permit data. Refresh to try again.'}
 }
 
-function regionRows(){
-  const rg=document.getElementById('regionFilter').value;
-  return rg==='permian'?allData.filter(r=>PERMIAN.has(r.county)):allData;
+function daysAgo(n){const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10)}
+function matches(r,skip){
+  if(skip!=='type'&&st.type&&r.type!==st.type)return false;
+  if(skip!=='status'&&st.status&&r.status!==st.status)return false;
+  if(st.county&&r.county!==st.county)return false;
+  if(st.range&&(r.submitted||'')<daysAgo(+st.range))return false;
+  if(st.q){const h=[r.operator,r.lease,r.well,r.county,r.survey,r.api,r.statusNo,r.type].join(' ').toLowerCase();
+    if(!st.q.split(/\s+/).every(w=>h.includes(w)))return false}
+  return true;
 }
-
-function buildCountyOptions(){
-  const sel=document.getElementById('countyFilter');const cur=sel.value;
-  const counties=[...new Set(regionRows().map(r=>r.county))].sort();
-  sel.innerHTML='<option value="">All Counties ('+counties.length+')</option>'+counties.map(c=>`<option value="${esc(c)}">${esc(titleCase(c))}</option>`).join('');
-  if(counties.includes(cur))sel.value=cur;
+function cmp(a,b){
+  const k=st.sort;let av=a[k]??'',bv=b[k]??'';
+  if(k==='depth'){av=+av||0;bv=+bv||0;return st.asc?av-bv:bv-av}
+  const c=String(av).localeCompare(String(bv),undefined,{numeric:true,sensitivity:'base'});
+  return (st.asc?c:-c)||(b.date||'').localeCompare(a.date||'');
 }
-
-function updateStats(base){
-  const ap=base.filter(r=>r.status==='APPROVED').length;
-  const pe=base.filter(r=>r.status==='PENDING').length;
-  document.getElementById('statTotal').textContent=base.length;
-  document.getElementById('statApproved').textContent=ap;
-  document.getElementById('statPending').textContent=pe;
-  document.getElementById('statCounties').textContent=new Set(base.map(r=>r.county)).size;
-  document.getElementById('cnt-all').textContent=base.length;
-  document.getElementById('cnt-APPROVED').textContent=ap;
-  document.getElementById('cnt-PENDING').textContent=pe;
-}
-
-function setTab(t){tab=t;document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));document.getElementById('tab-'+t).classList.add('active');render();}
-function sortBy(k){if(sortKey===k)sortAsc=!sortAsc;else{sortKey=k;sortAsc=(k!=='date');}render();}
 
 function render(){
-  const q=(document.getElementById('search').value||'').toLowerCase();
-  const cf=document.getElementById('countyFilter').value;
-  const tf=document.getElementById('typeFilter').value;
-  // Counters reflect region + county + type + search, but not the status tab
-  let base=regionRows().map(r=>({...r,idx:allData.indexOf(r)}));
-  if(cf)base=base.filter(r=>r.county===cf);
-  if(tf)base=base.filter(r=>r.permitType===tf);
-  if(q)base=base.filter(r=>[r.operator,r.leaseName,r.county,r.permitNum,r.statusNum,r.survey,r.permitType].join(' ').toLowerCase().includes(q));
-  updateStats(base);
-  let rows=base.map(r=>({...r,date:r.date,flag:flags[r.idx]!==undefined?flags[r.idx]:r.flag}));
-  if(tab!=='all')rows=rows.filter(r=>r.status===tab);
-  const cmp=(a,b)=>{const av=(a[sortKey]||'').toString().toLowerCase();const bv=(b[sortKey]||'').toString().toLowerCase();return sortAsc?av.localeCompare(bv):bv.localeCompare(av);};
-  rows.sort((a,b)=>{
-    if(tab==='all'&&a.status!==b.status)return a.status==='PENDING'?-1:1;
-    return cmp(a,b)||(b.date||'').localeCompare(a.date||'');
-  });
-  const tbody=document.getElementById('tbody');const nodata=document.getElementById('nodata');
-  document.getElementById('footerCount').textContent=`${rows.length} of ${allData.length} permits`;
-  if(!rows.length){tbody.innerHTML='';nodata.style.display='block';return;}
-  nodata.style.display='none';
-  tbody.innerHTML=rows.map(r=>`<tr class="row-${r.status.toLowerCase()}" onclick="openModal(${r.idx})">
-    <td><span class="type-b t-${r.status.toLowerCase()}">${r.status}</span></td>
-    <td><span ${typeHue(r.permitType)}>${esc(r.permitType)}</span></td>
-    <td><span class="county-b" style="--h:${countyHue(r.county)}">${esc(titleCase(r.county))}</span></td>
-    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis" title="${esc(r.operator)}">${esc(r.operator)}</td>
-    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;font-weight:500" title="${esc(r.leaseName)}">${esc(r.leaseName)}</td>
-    <td class="mono">${esc(r.statusNum||r.permitNum)}</td>
-    <td class="dim col-well">${esc(r.wellNum)}</td>
-    <td class="mono dim col-date">${esc(r.date||'—')}<span class="date-sub">${r.dateApproved?'approved':(r.submitDate?'filed':'')}</span></td>
-    <td class="dim col-district">${esc(r.district)}</td>
-    <td class="col-section" style="font-size:13px">${esc(r.section)}${r.block?' · Blk '+esc(r.block):''}</td>
-    <td class="dim col-survey" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;font-size:12px" title="${esc(r.survey)}">${esc(r.survey)}</td>
-    <td class="mono col-depth dim">${r.totalDepth?esc(r.totalDepth)+"'":'—'}</td>
-    <td><button class="flag-btn ${r.flag?'flagged':''}" onclick="event.stopPropagation();toggleFlag(${r.idx})">${r.flag?'★ Flagged':'☆ Flag'}</button></td>
-  </tr>`).join('');
+  // chips: counts ignore the type filter itself
+  const forChips=all.filter(r=>matches(r,'type'));
+  const tc={};forChips.forEach(r=>tc[r.type]=(tc[r.type]||0)+1);
+  const types=TYPE_ORDER.filter(t=>tc[t]||all.some(r=>r.type===t));
+  document.getElementById('chips').innerHTML=
+    `<button class="chip ${!st.type?'on':''}" data-t=""><span>All types</span><span class="c">${forChips.length.toLocaleString()}</span></button>`+
+    types.map(t=>`<button class="chip ${st.type===t?'on':''} ${tc[t]?'':'zero'}" data-t="${esc(t)}" style="--tc:var(${TYPE_COLOR[t]||'--t-other'})"><i></i><span>${esc(t)}</span><span class="c">${(tc[t]||0).toLocaleString()}</span></button>`).join('');
+
+  // stats: everything except the status filter
+  const base=all.filter(r=>matches(r,'status'));
+  const ap=base.filter(r=>r.status==='APPROVED').length, wk=base.filter(r=>(r.submitted||'')>=daysAgo(7)).length;
+  const wkAp=base.filter(r=>r.status==='APPROVED'&&(r.approvedOn||'')>=daysAgo(7)).length;
+  document.getElementById('sTotal').textContent=base.length.toLocaleString();
+  document.getElementById('sTotalSub').textContent=`${new Set(base.map(r=>r.county)).size} counties · ${new Set(base.map(r=>r.operator)).size} operators`;
+  document.getElementById('sAppr').textContent=ap.toLocaleString();
+  document.getElementById('sApprSub').textContent=`${wkAp} approved in the last 7 days`;
+  document.getElementById('sPend').textContent=(base.length-ap).toLocaleString();
+  document.getElementById('sWeek').textContent=wk.toLocaleString();
+  const top=Object.entries(base.filter(r=>(r.submitted||'')>=daysAgo(7)).reduce((m,r)=>(m[r.operator]=(m[r.operator]||0)+1,m),{})).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('sWeekSub').textContent=top?`Most active: ${opName(top[0]).slice(0,28)} (${top[1]})`:' ';
+
+  view=all.filter(r=>matches(r)).sort(cmp);
+  document.querySelectorAll('thead th').forEach(th=>{const k=th.dataset.k;
+    th.innerHTML=th.innerHTML.replace(/<span class="arr">.*?<\/span>/,'')+(k===st.sort?`<span class="arr">${st.asc?'↑':'↓'}</span>`:'<span class="arr"></span>')});
+  paint();
+  writeHash();
 }
 
-function toggleFlag(i){flags[i]=!(flags[i]!==undefined?flags[i]:allData[i].flag);render();}
-loadData();
+function rowHtml(r,i){
+  const tcol=`var(${TYPE_COLOR[r.type]||'--t-other'})`;
+  return `<tr data-i="${i}">
+    <td><div>${fmtDate(r.date)}</div><div class="sub">${r.status==='APPROVED'&&r.approvedOn?'approved':'filed'}</div></td>
+    <td><div class="op" title="${esc(r.operator)}">${esc(opName(r.operator))}${r.flag?'<span class="star">★</span>':''}</div><div class="sub mono">#${esc(r.statusNo)}</div></td>
+    <td><div class="lease">${esc(r.lease)}</div><div class="sub">Well ${esc(r.well||'—')}${r.profile?' · '+esc(r.profile):''}</div></td>
+    <td>${esc(r.county)}</td>
+    <td><span class="type" style="--tc:${tcol}"><i></i>${esc(r.type==='Other'&&r.rawType?r.rawType:r.type)}</span></td>
+    <td><span class="pill ${r.status.toLowerCase()}">${r.status==='APPROVED'?'Approved':'Pending'}</span></td>
+    <td class="col-loc"><div class="loc" title="${esc(r.loc)}">${esc(r.loc)||'<span class="sub">—</span>'}</div></td>
+    <td class="num col-depth mono">${r.depth?fmtNum(r.depth)+"'":'—'}</td>
+    <td class="col-api mono">${esc(r.api)||'—'}</td>
+  </tr>`;
+}
+function cardHtml(r,i){
+  const tcol=`var(${TYPE_COLOR[r.type]||'--t-other'})`;
+  return `<div class="pcard" data-i="${i}">
+    <div class="top"><div><div class="op">${esc(opName(r.operator))}${r.flag?'<span class="star">★</span>':''}</div>
+      <div class="lease">${esc(r.lease)} <span class="sub">· ${esc(r.well)}</span></div></div>
+      <span class="pill ${r.status.toLowerCase()}">${r.status==='APPROVED'?'Approved':'Pending'}</span></div>
+    <div class="meta"><span class="type" style="--tc:${tcol}"><i></i>${esc(r.type)}</span>
+      <span class="sub">${esc(r.county)}</span><span class="sub">${fmtDate(r.date)}</span>${r.depth?`<span class="sub">${fmtNum(r.depth)}'</span>`:''}</div>
+    ${r.loc?`<div class="sub" style="margin-top:6px">${esc(r.loc)}</div>`:''}
+  </div>`;
+}
+function paint(){
+  const rows=view.slice(0,shown);
+  document.getElementById('tbody').innerHTML=rows.map(rowHtml).join('');
+  document.getElementById('cards').innerHTML=rows.map(cardHtml).join('');
+  document.getElementById('empty').hidden=view.length>0;
+  document.getElementById('footCount').textContent=`Showing ${rows.length.toLocaleString()} of ${view.length.toLocaleString()} permits`;
+  const more=document.getElementById('moreBtn');more.hidden=view.length<=shown;
+}
+function showMore(){shown+=PAGE;paint()}
 
-let modalIdx = -1;
+/* detail drawer */
+function openDrawer(r){
+  document.getElementById('dTitle').textContent=`${r.lease} ${r.well}`.trim();
+  document.getElementById('dSub').textContent=opName(r.operator);
+  const f=(l,v,full)=>`<div class="${full?'full':''}"><dt>${l}</dt><dd>${v||'—'}</dd></div>`;
+  const tcol=`var(${TYPE_COLOR[r.type]||'--t-other'})`;
+  document.getElementById('dBody').innerHTML=`
+    <div class="d-tags"><span class="pill ${r.status.toLowerCase()}">${r.status==='APPROVED'?'Approved':'Pending'}</span>
+      <span class="type" style="--tc:${tcol}"><i></i>${esc(r.type)}</span>${r.profile?`<span class="sub">${esc(r.profile)}</span>`:''}</div>
+    <dl class="grid">
+      ${f('County',esc(r.county))}${f('District',esc(r.district))}
+      ${f('Filed',fmtDate(r.submitted))}${f('Approved',r.approvedOn?fmtDate(r.approvedOn):'')}
+      ${f('Status #','<span class="mono">'+esc(r.statusNo)+'</span>')}${f('API','<span class="mono">'+esc(r.api)+'</span>')}
+      ${f('Section',esc(r.section))}${f('Block',esc(r.block))}
+      ${f('Survey',esc(r.survey),true)}
+      ${f('Abstract',esc(r.abstract))}${f('Total depth',r.depth?fmtNum(r.depth)+"'":'')}
+      ${f('RRC queue',esc(r.queue))}${f('Well #',esc(r.well))}
+    </dl>
+    ${r.notes?`<div class="notes"><b>Notes:</b> ${esc(r.notes)}</div>`:''}
+    <div class="d-actions">
+      <a href="https://webapps.rrc.texas.gov/DP/initializePublicQueryAction.do" target="_blank" rel="noopener">RRC W-1 search ↗</a>
+      ${r.api?`<a href="https://www.google.com/search?q=${encodeURIComponent('"'+r.api+'" '+r.lease)}" target="_blank" rel="noopener">Search API ↗</a>`:''}
+    </div>`;
+  document.getElementById('drawer').classList.add('open');document.getElementById('scrim').classList.add('open');
+  document.getElementById('drawer').setAttribute('aria-hidden','false');
+}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('scrim').classList.remove('open');document.getElementById('drawer').setAttribute('aria-hidden','true')}
 
-function openModal(idx){
-  const r = allData[idx];
-  if(!r) return;
-  modalIdx = idx;
-  const flagged = flags[idx] !== undefined ? flags[idx] : r.flag;
-  
-  document.getElementById('mType').textContent = r.status + ' · ' + r.permitType;
-  document.getElementById('mLease').textContent = r.leaseName || '—';
-  document.getElementById('mOperator').textContent = r.operator;
-  
-  const countyEl = document.getElementById('mCounty');
-  countyEl.textContent = titleCase(r.county);
-  countyEl.className = 'modal-county county-b';
-  countyEl.style.setProperty('--h', countyHue(r.county));
-  
-  document.getElementById('mPermit').textContent = r.statusNum || r.permitNum || '—';
-  document.getElementById('mWell').textContent = r.wellNum || '—';
-  document.getElementById('mDate').textContent = r.dateApproved || '—';
-  document.getElementById('mFiled').textContent = r.submitDate || '—';
-  document.getElementById('mExpires').textContent = r.expires || '—';
-  document.getElementById('mDepth').textContent = r.totalDepth ? r.totalDepth + "'" : '—';
-  document.getElementById('mDistrict').textContent = r.district || '—';
-  document.getElementById('mSection').textContent = r.section || '—';
-  document.getElementById('mBlock').textContent = r.block || '—';
-  document.getElementById('mAbstract').textContent = r.abstract || '—';
-  document.getElementById('mSurvey').textContent = r.survey || '—';
-  
-  const btn = document.getElementById('mFlagBtn');
-  btn.textContent = flagged ? '★ Flagged' : '☆ Flag this permit';
-  btn.className = 'modal-flag-btn' + (flagged ? ' flagged' : '');
-  
-  document.getElementById('modalOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
+/* CSV */
+function exportCsv(){
+  const cols=[['Date','date'],['Status','status'],['Type','type'],['Operator','operator'],['Lease','lease'],['Well','well'],['County','county'],['District','district'],['Section','section'],['Block','block'],['Survey','survey'],['Abstract','abstract'],['Depth','depth'],['API','api'],['Status #','statusNo'],['Filed','submitted'],['Approved','approvedOn']];
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const csv=[cols.map(c=>q(c[0])).join(',')].concat(view.map(r=>cols.map(c=>q(r[c[1]])).join(','))).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`permian-permits-${new Date().toISOString().slice(0,10)}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
-function closeModal(e){
-  if(e.target === document.getElementById('modalOverlay')) closeModalDirect();
-}
+/* shareable filters in the URL */
+function writeHash(){const p=new URLSearchParams();Object.entries(st).forEach(([k,v])=>{if(v!==''&&!(k==='sort'&&v==='date')&&!(k==='asc'&&v===false))p.set(k,v)});
+  const h=p.toString();history.replaceState(null,'',h?'#'+h:location.pathname)}
+function readHash(){const p=new URLSearchParams(location.hash.slice(1));
+  ['type','status','county','range','q','sort'].forEach(k=>{if(p.has(k))st[k]=p.get(k)});st.asc=p.get('asc')==='true';
+  document.getElementById('q').value=st.q;document.getElementById('county').value=st.county;document.getElementById('range').value=st.range;
+  document.querySelectorAll('#statusSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.status));}
 
-function closeModalDirect(){
-  document.getElementById('modalOverlay').classList.remove('open');
-  document.body.style.overflow = '';
-  modalIdx = -1;
-}
-
-function toggleModalFlag(){
-  if(modalIdx < 0) return;
-  flags[modalIdx] = !(flags[modalIdx] !== undefined ? flags[modalIdx] : allData[modalIdx].flag);
-  const flagged = flags[modalIdx];
-  const btn = document.getElementById('mFlagBtn');
-  btn.textContent = flagged ? '★ Flagged' : '☆ Flag this permit';
-  btn.className = 'modal-flag-btn' + (flagged ? ' flagged' : '');
-  render();
-}
-
-// Close on escape key
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModalDirect(); });
-
+/* events */
+document.getElementById('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.type=b.dataset.t;shown=PAGE;render()});
+document.getElementById('statusSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.status=b.dataset.v;
+  document.querySelectorAll('#statusSeg button').forEach(x=>x.classList.toggle('on',x===b));shown=PAGE;render()});
+document.getElementById('county').addEventListener('change',e=>{st.county=e.target.value;shown=PAGE;render()});
+document.getElementById('range').addEventListener('change',e=>{st.range=e.target.value;shown=PAGE;render()});
+let qt;document.getElementById('q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{st.q=e.target.value.trim().toLowerCase();shown=PAGE;render()},150)});
+document.querySelector('thead').addEventListener('click',e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.k;
+  if(st.sort===k)st.asc=!st.asc;else{st.sort=k;st.asc=!['date','depth'].includes(k)}render()});
+document.getElementById('tbody').addEventListener('click',e=>{const tr=e.target.closest('tr');if(tr)openDrawer(view[+tr.dataset.i])});
+document.getElementById('cards').addEventListener('click',e=>{const c=e.target.closest('.pcard');if(c)openDrawer(view[+c.dataset.i])});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});
+load();
 </script>
-
-<!-- DETAIL MODAL -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-  <div class="modal-card" id="modalCard">
-    <div class="modal-header">
-      <div class="modal-header-left">
-        <div class="modal-type" id="mType"></div>
-        <div class="modal-title" id="mLease"></div>
-        <div class="modal-operator" id="mOperator"></div>
-      </div>
-      <button class="modal-close" onclick="closeModalDirect()">✕</button>
-    </div>
-    <div class="modal-body">
-      <span class="modal-county county-b" id="mCounty"></span>
-      <div class="modal-grid" style="margin-top:12px">
-        <div class="modal-field">
-          <div class="modal-field-label">Status #</div>
-          <div class="modal-field-value mono" id="mPermit"></div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-field-label">Well #</div>
-          <div class="modal-field-value" id="mWell"></div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-field-label">Approved</div>
-          <div class="modal-field-value mono" id="mDate"></div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-field-label">Filed</div>
-          <div class="modal-field-value mono" id="mFiled"></div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-field-label">Expires</div>
-          <div class="modal-field-value mono" id="mExpires"></div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-field-label">Depth</div>
-          <div class="modal-field-value mono" id="mDepth"></div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-field-label">District</div>
-          <div class="modal-field-value" id="mDistrict"></div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-field-label">Section</div>
-          <div class="modal-field-value" id="mSection"></div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-field-label">Block</div>
-          <div class="modal-field-value" id="mBlock"></div>
-        </div>
-        <div class="modal-field">
-          <div class="modal-field-label">Abstract</div>
-          <div class="modal-field-value" id="mAbstract"></div>
-        </div>
-        <div class="modal-field full">
-          <div class="modal-field-label">Survey</div>
-          <div class="modal-field-value" id="mSurvey"></div>
-        </div>
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button class="modal-flag-btn" id="mFlagBtn" onclick="toggleModalFlag()">☆ Flag this permit</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
