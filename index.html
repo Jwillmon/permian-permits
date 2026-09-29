@@ -74,6 +74,10 @@ select{height:38px;border:1px solid var(--border);border-radius:9px;background:v
 .seg button{border:0;background:none;padding:0 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted)}
 .seg button.on{background:var(--hover);color:var(--ink)}
 .spacer{flex:1}
+.datef{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.custom{display:inline-flex;gap:6px;align-items:center}
+.custom input{height:38px;border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:0 8px;outline:none}
+.custom input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 
 /* table */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
@@ -180,10 +184,21 @@ tbody tr:last-child td{border-bottom:0}
       <input id="q" type="search" placeholder="Search operator, lease, survey, API, status #" autocomplete="off">
     </label>
     <select id="county" aria-label="County"><option value="">All counties</option></select>
-    <select id="range" aria-label="Filed within">
-      <option value="">Any date</option><option value="7">Filed last 7 days</option>
-      <option value="30">Filed last 30 days</option><option value="60">Filed last 60 days</option>
-    </select>
+    <div class="datef">
+      <select id="range" aria-label="Date range">
+        <option value="">Any date</option>
+        <option value="0">Today</option><option value="1">Last 1 day</option><option value="2">Last 2 days</option>
+        <option value="3">Last 3 days</option><option value="7">Last 7 days</option><option value="14">Last 14 days</option>
+        <option value="30">Last 30 days</option><option value="60">Last 60 days</option><option value="90">Last 90 days</option>
+        <option value="custom">Custom range…</option>
+      </select>
+      <select id="basis" aria-label="Date type" title="Which date the range applies to">
+        <option value="any">Filed or approved</option><option value="filed">Filed</option><option value="approved">Approved</option>
+      </select>
+      <span class="custom" id="customWrap" hidden>
+        <input type="date" id="dFrom" aria-label="From"><span class="sub">to</span><input type="date" id="dTo" aria-label="To">
+      </span>
+    </div>
     <div class="seg" id="statusSeg">
       <button data-v="" class="on">All</button><button data-v="APPROVED">Approved</button><button data-v="PENDING">Pending</button>
     </div>
@@ -229,7 +244,7 @@ const TYPE_ORDER=['New Drill','Amendment','Recompletion','Reclass','Re-Enter','R
 const TYPE_COLOR={'New Drill':'--t-new','Amendment':'--t-amend','Recompletion':'--t-recomp','Reclass':'--t-reclass','Re-Enter':'--t-reenter'};
 const PAGE=250;
 let all=[], view=[], shown=PAGE;
-const st={type:'',status:'',county:'',range:'',q:'',sort:'date',asc:false};
+const st={type:'',status:'',county:'',range:'',basis:'any',from:'',to:'',q:'',sort:'date',asc:false};
 
 /* theme */
 (function(){let t=null;try{t=localStorage.getItem('pp-theme')}catch(e){}
@@ -296,12 +311,21 @@ async function load(){
   }catch(e){console.error(e);document.getElementById('loading').innerHTML='Couldn\'t load permit data. Refresh to try again.'}
 }
 
-function daysAgo(n){const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10)}
+// Dates in Central time, matching the RRC's dates
+function ctDate(d){return d.toLocaleDateString('en-CA',{timeZone:'America/Chicago'})}
+function daysAgo(n){const d=new Date();d.setDate(d.getDate()-n);return ctDate(d)}
+function inRange(r){
+  let lo='',hi='9999';
+  if(st.range==='custom'){lo=st.from||'';hi=st.to||'9999'}else if(st.range!==''){lo=daysAgo(+st.range)}
+  if(!lo&&hi==='9999')return true;
+  const ds=st.basis==='filed'?[r.submitted]:st.basis==='approved'?[r.approvedOn]:[r.submitted,r.approvedOn];
+  return ds.some(d=>d&&d>=lo&&d<=hi);
+}
 function matches(r,skip){
   if(skip!=='type'&&st.type&&r.type!==st.type)return false;
   if(skip!=='status'&&st.status&&r.status!==st.status)return false;
   if(st.county&&r.county!==st.county)return false;
-  if(st.range&&(r.submitted||'')<daysAgo(+st.range))return false;
+  if(!inRange(r))return false;
   if(st.q){const h=[r.operator,r.lease,r.well,r.county,r.survey,r.api,r.statusNo,r.type].join(' ').toLowerCase();
     if(!st.q.split(/\s+/).every(w=>h.includes(w)))return false}
   return true;
@@ -415,11 +439,12 @@ function exportCsv(){
 }
 
 /* shareable filters in the URL */
-function writeHash(){const p=new URLSearchParams();Object.entries(st).forEach(([k,v])=>{if(v!==''&&!(k==='sort'&&v==='date')&&!(k==='asc'&&v===false))p.set(k,v)});
+function writeHash(){const p=new URLSearchParams();Object.entries(st).forEach(([k,v])=>{if(v!==''&&!(k==='sort'&&v==='date')&&!(k==='asc'&&v===false)&&!(k==='basis'&&v==='any')&&!((k==='from'||k==='to')&&st.range!=='custom'))p.set(k,v)});
   const h=p.toString();history.replaceState(null,'',h?'#'+h:location.pathname)}
 function readHash(){const p=new URLSearchParams(location.hash.slice(1));
-  ['type','status','county','range','q','sort'].forEach(k=>{if(p.has(k))st[k]=p.get(k)});st.asc=p.get('asc')==='true';
-  document.getElementById('q').value=st.q;document.getElementById('county').value=st.county;document.getElementById('range').value=st.range;
+  ['type','status','county','range','basis','from','to','q','sort'].forEach(k=>{if(p.has(k))st[k]=p.get(k)});st.asc=p.get('asc')==='true';
+  document.getElementById('q').value=st.q;document.getElementById('county').value=st.county;document.getElementById('range').value=st.range;document.getElementById('basis').value=st.basis;
+  document.getElementById('dFrom').value=st.from;document.getElementById('dTo').value=st.to;document.getElementById('customWrap').hidden=st.range!=='custom';
   document.querySelectorAll('#statusSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.status));}
 
 /* events */
@@ -427,7 +452,12 @@ document.getElementById('chips').addEventListener('click',e=>{const b=e.target.c
 document.getElementById('statusSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.status=b.dataset.v;
   document.querySelectorAll('#statusSeg button').forEach(x=>x.classList.toggle('on',x===b));shown=PAGE;render()});
 document.getElementById('county').addEventListener('change',e=>{st.county=e.target.value;shown=PAGE;render()});
-document.getElementById('range').addEventListener('change',e=>{st.range=e.target.value;shown=PAGE;render()});
+document.getElementById('range').addEventListener('change',e=>{st.range=e.target.value;const c=st.range==='custom';document.getElementById('customWrap').hidden=!c;
+  if(c&&!st.from){st.from=daysAgo(7);st.to=daysAgo(0);document.getElementById('dFrom').value=st.from;document.getElementById('dTo').value=st.to}
+  shown=PAGE;render()});
+document.getElementById('basis').addEventListener('change',e=>{st.basis=e.target.value;shown=PAGE;render()});
+document.getElementById('dFrom').addEventListener('change',e=>{st.from=e.target.value;shown=PAGE;render()});
+document.getElementById('dTo').addEventListener('change',e=>{st.to=e.target.value;shown=PAGE;render()});
 let qt;document.getElementById('q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{st.q=e.target.value.trim().toLowerCase();shown=PAGE;render()},150)});
 document.querySelector('thead').addEventListener('click',e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.k;
   if(st.sort===k)st.asc=!st.asc;else{st.sort=k;st.asc=!['date','depth'].includes(k)}render()});
