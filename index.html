@@ -161,7 +161,9 @@ tbody tr:last-child td{border-bottom:none}
 [data-theme="dark"] .t-approved{background:#0e2e18;color:#4ade80;border:1px solid #1a5c30}
 [data-theme="dark"] .t-pending{background:#2e1800;color:#fb923c;border:1px solid #5a3000}
 
-.county-b{display:inline-block;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600}
+.county-b{display:inline-block;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg2);color:var(--ink2);border:1px solid var(--border2)}
+.ptype{font-size:12px;color:var(--ink2)}
+.date-sub{display:block;font-size:10px;color:var(--muted);font-family:'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase}
 [data-theme="light"] .cMIDLAND{background:#e4eff9;color:#14448a;border:1px solid #a8c8f0}
 [data-theme="light"] .cECTOR{background:#e8f5ee;color:#145c30;border:1px solid #a0d8b4}
 [data-theme="light"] .cANDREWS{background:#fdf5e0;color:#7a4800;border:1px solid #f0d480}
@@ -312,15 +314,15 @@ tbody tr:hover td{background:var(--row-hover) !important}
     <span class="search-icon">⌕</span>
     <input type="text" id="search" placeholder="Search operator, lease, county, permit..." oninput="render()">
   </div>
+  <select id="regionFilter" onchange="buildCountyOptions();render()">
+    <option value="permian">Permian Basin</option>
+    <option value="all">All Texas</option>
+  </select>
   <select id="countyFilter" onchange="render()">
     <option value="">All Counties</option>
-    <option>MIDLAND</option><option>ECTOR</option><option>ANDREWS</option>
-    <option>DAWSON</option><option>REEVES</option><option>IRION</option>
-    <option>TOM GREEN</option><option>MARTIN</option><option>HOWARD</option>
   </select>
   <select id="typeFilter" onchange="render()">
-    <option value="">All Types</option>
-    <option>APPROVED</option><option>PENDING</option>
+    <option value="">All Permit Types</option>
   </select>
 </div>
 
@@ -335,13 +337,14 @@ tbody tr:hover td{background:var(--row-hover) !important}
     <table>
       <thead>
         <tr>
-          <th onclick="sortBy('type')">Type</th>
+          <th onclick="sortBy('status')">Status</th>
+          <th onclick="sortBy('permitType')">Type</th>
           <th onclick="sortBy('county')">County</th>
           <th onclick="sortBy('operator')">Operator</th>
           <th onclick="sortBy('leaseName')">Lease</th>
-          <th onclick="sortBy('permitNum')">Permit #</th>
+          <th onclick="sortBy('statusNum')">Status #</th>
           <th onclick="sortBy('wellNum')" class="col-well">Well #</th>
-          <th onclick="sortBy('dateApproved')" class="col-date">Date</th>
+          <th onclick="sortBy('date')" class="col-date">Date</th>
           <th onclick="sortBy('district')" class="col-district">District</th>
           <th onclick="sortBy('section')" class="col-section">Section</th>
           <th class="col-survey">Survey</th>
@@ -363,7 +366,7 @@ tbody tr:hover td{background:var(--row-hover) !important}
 
 <script>
 const SHEET_ID='14YyRf-In41XXFH4XNWF1hfQPa1597ZiBcYUqiqEnxM0';
-let allData=[];let tab='all';let sortKey='county';let sortAsc=true;const flags={};
+let allData=[];let tab='all';let sortKey='date';let sortAsc=false;const flags={};
 
 // Theme toggle
 let theme=localStorage.getItem('pp-theme')||'light';
@@ -377,99 +380,151 @@ function toggleTheme(){
   localStorage.setItem('pp-theme',theme);
 }
 
-function cc(c){return 'c'+c.replace(/\s/g,'')}
+function cc(c){return 'c'+(c||'').toUpperCase().replace(/\s/g,'')}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+function titleCase(s){return s.toLowerCase().replace(/\b[a-z]/g,m=>m.toUpperCase())}
+
+// Texas counties treated as Permian Basin (Midland Basin, Delaware Basin, Central Basin Platform + fringe)
+const PERMIAN=new Set(['ANDREWS','BORDEN','COCHRAN','COKE','CRANE','CROCKETT','CULBERSON','DAWSON','ECTOR','GAINES','GARZA','GLASSCOCK','HOCKLEY','HOWARD','IRION','JEFF DAVIS','KENT','LOVING','LYNN','MARTIN','MIDLAND','MITCHELL','NOLAN','PECOS','REAGAN','REEVES','SCHLEICHER','SCURRY','STERLING','TERRY','TOM GREEN','UPTON','WARD','WINKLER','YOAKUM']);
+
+const TODAY=new Date().toISOString().slice(0,10);
 
 async function fetchSheet(name){
-  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=1`;
-  const res=await fetch(url);const text=await res.text();
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json${name?'&sheet='+encodeURIComponent(name):''}&headers=1`;
+  const res=await fetch(url,{cache:'no-store'});const text=await res.text();
   const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+  if(json.status==='error')throw new Error((json.errors||[]).map(e=>e.detailed_message||e.message).join('; ')||'Sheet error');
   const t=json.table;if(!t||!t.rows||!t.rows.length)return[];
   let cols=t.cols.map(c=>c.label);let rows=t.rows;
   if(!cols[0]||cols[0]===''){cols=t.rows[0].c.map(c=>c?(c.v||''):'');rows=t.rows.slice(1);}
-  return rows.map(r=>{const o={};cols.forEach((c,i)=>{o[c]=r.c[i]?(r.c[i].v!==null&&r.c[i].v!==undefined?r.c[i].v:(r.c[i].f||'')):'';});return o;});
+  return rows.map(r=>{const o={};cols.forEach((c,i)=>{const cell=r.c[i];o[c]=cell?(cell.f!=null&&typeof cell.v!=='string'?cell.f:(cell.v!=null?cell.v:'')):'';});return o;});
 }
 
-function mapRow(r,type){return{
-  type:r['Type']||type,county:(r['County']||'').trim(),
-  operator:(r['Operator']||'').trim().replace(/ OOA$/,''),
-  leaseName:(r['Lease Name']||'').trim(),
-  permitNum:(r['Permit #']||'').toString().trim(),
-  wellNum:(r['Well #']||'').toString().trim(),
-  dateApproved:(r['Date Approved']||r['Submit Date']||'').trim(),
-  dateIssued:(r['Date Issued']||'').trim(),
-  district:(r['District']||'').trim(),
-  section:(r['Section']||'').trim(),block:(r['Block']||'').trim(),
-  survey:(r['Survey']||'').trim(),totalDepth:(r['Depth']||'').trim(),
-  flag:(r['Flag']||'').trim()!=='',
-};}
+const s=v=>(v==null?'':String(v)).trim();
+
+function mapRow(r){
+  const statusRaw=s(r['Contact Status']).toUpperCase();
+  const apprRaw=s(r['Date Approved']);
+  // For amendments the scraper writes the permit EXPIRATION date into "Date Approved" (≈2 yrs out). Anything in the future is an expiration, not an approval.
+  const future=apprRaw&&apprRaw>TODAY;
+  return{
+    status:statusRaw==='APPROVED'?'APPROVED':'PENDING',
+    permitType:s(r['Type'])||'—',
+    county:s(r['County']).toUpperCase(),
+    operator:s(r['Operator']).replace(/ OOA$/,''),
+    leaseName:s(r['Lease Name']),
+    permitNum:s(r['Permit #']),
+    statusNum:s(r['Status #']),
+    wellNum:s(r['Well #']),
+    dateApproved:future?'':apprRaw,
+    expires:future?apprRaw:'',
+    submitDate:s(r['Submit Date']),
+    district:s(r['District']),
+    section:s(r['Section']),block:s(r['Block']),
+    survey:s(r['Survey']),abstract:s(r['Abstract']),totalDepth:s(r['Depth']),
+    notes:s(r['Notes']),
+    scrapedAt:s(r['Scraped At']),
+    flag:s(r['Flag'])!=='',
+    get date(){return this.dateApproved||this.submitDate},
+  };
+}
+
+function isJunk(r){
+  // Drops blank rows and leftover RRC column-header rows (e.g. "UNIVERSAL_DOC_NO", "OPERATOR_NAME")
+  if(!r.county)return true;
+  return /^[A-Z_]+$/.test(r.permitNum)&&r.permitNum.includes('_');
+}
 
 async function loadData(){
   try{
-    const[a,p]=await Promise.all([fetchSheet('Approved Permits'),fetchSheet('Pending Permits')]);
-    allData=[...a.filter(r=>r['County']).map(r=>mapRow(r,'APPROVED')),...p.filter(r=>r['County']).map(r=>mapRow(r,'PENDING'))];
+    let raw;
+    try{raw=await fetchSheet('Pending Permits');}catch(e){raw=await fetchSheet('');}
+    // One row per RRC document number: keep the most recently scraped copy
+    const byKey=new Map();
+    raw.map(mapRow).filter(r=>!isJunk(r)).forEach(r=>{
+      const k=r.permitNum||(r.statusNum+'|'+r.permitType)||(r.leaseName+'|'+r.wellNum+'|'+r.county);
+      const prev=byKey.get(k);
+      if(!prev||r.scrapedAt>=prev.scrapedAt)byKey.set(k,r);
+    });
+    allData=[...byKey.values()];
     document.getElementById('loading').style.display='none';
-    document.getElementById('lastUpdate').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CST';
-    updateStats();render();
+    const last=allData.map(r=>r.scrapedAt).filter(Boolean).sort().pop();
+    let upd='Updated —';
+    if(last){const d=new Date(last.replace(' UTC','Z').replace(' ','T'));
+      if(!isNaN(d))upd='Scraper last ran '+d.toLocaleString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' CT';}
+    document.getElementById('lastUpdate').textContent=upd;
+    const types=[...new Set(allData.map(r=>r.permitType))].sort();
+    document.getElementById('typeFilter').innerHTML='<option value="">All Permit Types</option>'+types.map(t=>`<option>${esc(t)}</option>`).join('');
+    buildCountyOptions();render();
   }catch(e){
     document.getElementById('loading').innerHTML='<span style="color:var(--crimson2)">Unable to load data.</span>';
     console.error(e);
   }
 }
 
-function updateStats(){
-  const ap=allData.filter(r=>r.type==='APPROVED').length;
-  const pe=allData.filter(r=>r.type==='PENDING').length;
-  document.getElementById('statTotal').textContent=allData.length;
+function regionRows(){
+  const rg=document.getElementById('regionFilter').value;
+  return rg==='permian'?allData.filter(r=>PERMIAN.has(r.county)):allData;
+}
+
+function buildCountyOptions(){
+  const sel=document.getElementById('countyFilter');const cur=sel.value;
+  const counties=[...new Set(regionRows().map(r=>r.county))].sort();
+  sel.innerHTML='<option value="">All Counties ('+counties.length+')</option>'+counties.map(c=>`<option value="${esc(c)}">${esc(titleCase(c))}</option>`).join('');
+  if(counties.includes(cur))sel.value=cur;
+}
+
+function updateStats(base){
+  const ap=base.filter(r=>r.status==='APPROVED').length;
+  const pe=base.filter(r=>r.status==='PENDING').length;
+  document.getElementById('statTotal').textContent=base.length;
   document.getElementById('statApproved').textContent=ap;
   document.getElementById('statPending').textContent=pe;
-  document.getElementById('statCounties').textContent=new Set(allData.map(r=>r.county)).size;
-
-  document.getElementById('cnt-all').textContent=allData.length;
+  document.getElementById('statCounties').textContent=new Set(base.map(r=>r.county)).size;
+  document.getElementById('cnt-all').textContent=base.length;
   document.getElementById('cnt-APPROVED').textContent=ap;
   document.getElementById('cnt-PENDING').textContent=pe;
 }
 
 function setTab(t){tab=t;document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));document.getElementById('tab-'+t).classList.add('active');render();}
-function sortBy(k){if(sortKey===k)sortAsc=!sortAsc;else{sortKey=k;sortAsc=true;}render();}
+function sortBy(k){if(sortKey===k)sortAsc=!sortAsc;else{sortKey=k;sortAsc=(k!=='date');}render();}
 
 function render(){
   const q=(document.getElementById('search').value||'').toLowerCase();
   const cf=document.getElementById('countyFilter').value;
   const tf=document.getElementById('typeFilter').value;
-  let rows=allData.map((r,i)=>({...r,idx:i,flag:flags[i]!==undefined?flags[i]:r.flag}));
-  if(tab!=='all')rows=rows.filter(r=>r.type===tab);
-  if(cf)rows=rows.filter(r=>r.county===cf);
-  if(tf)rows=rows.filter(r=>r.type===tf);
-  if(q)rows=rows.filter(r=>[r.operator,r.leaseName,r.county,r.permitNum,r.survey].join(' ').toLowerCase().includes(q));
-  // When on 'all' tab, sort pending first then approved, then by selected sort key
-  if(tab==='all'){
-    rows.sort((a,b)=>{
-      if(a.type!==b.type) return a.type==='PENDING'?-1:1;
-      const av=(a[sortKey]||'').toString().toLowerCase();
-      const bv=(b[sortKey]||'').toString().toLowerCase();
-      return sortAsc?av.localeCompare(bv):bv.localeCompare(av);
-    });
-  } else {
-    rows.sort((a,b)=>{const av=(a[sortKey]||'').toString().toLowerCase();const bv=(b[sortKey]||'').toString().toLowerCase();return sortAsc?av.localeCompare(bv):bv.localeCompare(av);});
-  }
+  // Counters reflect region + county + type + search, but not the status tab
+  let base=regionRows().map(r=>({...r,idx:allData.indexOf(r)}));
+  if(cf)base=base.filter(r=>r.county===cf);
+  if(tf)base=base.filter(r=>r.permitType===tf);
+  if(q)base=base.filter(r=>[r.operator,r.leaseName,r.county,r.permitNum,r.statusNum,r.survey,r.permitType].join(' ').toLowerCase().includes(q));
+  updateStats(base);
+  let rows=base.map(r=>({...r,date:r.date,flag:flags[r.idx]!==undefined?flags[r.idx]:r.flag}));
+  if(tab!=='all')rows=rows.filter(r=>r.status===tab);
+  const cmp=(a,b)=>{const av=(a[sortKey]||'').toString().toLowerCase();const bv=(b[sortKey]||'').toString().toLowerCase();return sortAsc?av.localeCompare(bv):bv.localeCompare(av);};
+  rows.sort((a,b)=>{
+    if(tab==='all'&&a.status!==b.status)return a.status==='PENDING'?-1:1;
+    return cmp(a,b)||(b.date||'').localeCompare(a.date||'');
+  });
   const tbody=document.getElementById('tbody');const nodata=document.getElementById('nodata');
+  document.getElementById('footerCount').textContent=`${rows.length} of ${allData.length} permits`;
   if(!rows.length){tbody.innerHTML='';nodata.style.display='block';return;}
   nodata.style.display='none';
-  tbody.innerHTML=rows.map(r=>`<tr onclick="openModal(${r.idx})" style="cursor:pointer;-webkit-tap-highlight-color:rgba(139,18,8,0.1)">
-    <td><span class="type-b t-${r.type.toLowerCase()}">${r.type}</span></td>
-    <td><span class="county-b ${cc(r.county)}">${r.county}</span></td>
-    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis" title="${r.operator}">${r.operator}</td>
-    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;font-weight:500" title="${r.leaseName}">${r.leaseName}</td>
-    <td class="mono">${r.permitNum}</td>
-    <td class="dim col-well">${r.wellNum}</td>
-    <td class="mono dim col-date">${r.dateApproved||r.dateIssued}</td>
-    <td class="dim col-district">${r.district}</td>
-    <td class="col-section" style="font-size:13px">${r.section}${r.block?' · Blk '+r.block:''}</td>
-    <td class="dim col-survey" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;font-size:12px" title="${r.survey}">${r.survey}</td>
-    <td class="mono col-depth dim">${r.totalDepth?r.totalDepth+"'":'—'}</td>
+  tbody.innerHTML=rows.map(r=>`<tr onclick="openModal(${r.idx})">
+    <td><span class="type-b t-${r.status.toLowerCase()}">${r.status}</span></td>
+    <td class="ptype">${esc(r.permitType)}</td>
+    <td><span class="county-b ${cc(r.county)}">${esc(titleCase(r.county))}</span></td>
+    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis" title="${esc(r.operator)}">${esc(r.operator)}</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;font-weight:500" title="${esc(r.leaseName)}">${esc(r.leaseName)}</td>
+    <td class="mono">${esc(r.statusNum||r.permitNum)}</td>
+    <td class="dim col-well">${esc(r.wellNum)}</td>
+    <td class="mono dim col-date">${esc(r.date||'—')}<span class="date-sub">${r.dateApproved?'approved':(r.submitDate?'filed':'')}</span></td>
+    <td class="dim col-district">${esc(r.district)}</td>
+    <td class="col-section" style="font-size:13px">${esc(r.section)}${r.block?' · Blk '+esc(r.block):''}</td>
+    <td class="dim col-survey" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;font-size:12px" title="${esc(r.survey)}">${esc(r.survey)}</td>
+    <td class="mono col-depth dim">${r.totalDepth?esc(r.totalDepth)+"'":'—'}</td>
     <td><button class="flag-btn ${r.flag?'flagged':''}" onclick="event.stopPropagation();toggleFlag(${r.idx})">${r.flag?'★ Flagged':'☆ Flag'}</button></td>
   </tr>`).join('');
-  document.getElementById('footerCount').textContent=`${rows.length} of ${allData.length} permits`;
 }
 
 function toggleFlag(i){flags[i]=!(flags[i]!==undefined?flags[i]:allData[i].flag);render();}
@@ -483,17 +538,19 @@ function openModal(idx){
   modalIdx = idx;
   const flagged = flags[idx] !== undefined ? flags[idx] : r.flag;
   
-  document.getElementById('mType').textContent = r.type;
+  document.getElementById('mType').textContent = r.status + ' · ' + r.permitType;
   document.getElementById('mLease').textContent = r.leaseName || '—';
   document.getElementById('mOperator').textContent = r.operator;
   
   const countyEl = document.getElementById('mCounty');
-  countyEl.textContent = r.county;
+  countyEl.textContent = titleCase(r.county);
   countyEl.className = 'modal-county county-b ' + cc(r.county);
   
-  document.getElementById('mPermit').textContent = r.permitNum || '—';
+  document.getElementById('mPermit').textContent = r.statusNum || r.permitNum || '—';
   document.getElementById('mWell').textContent = r.wellNum || '—';
-  document.getElementById('mDate').textContent = r.dateApproved || r.dateIssued || '—';
+  document.getElementById('mDate').textContent = r.dateApproved || '—';
+  document.getElementById('mFiled').textContent = r.submitDate || '—';
+  document.getElementById('mExpires').textContent = r.expires || '—';
   document.getElementById('mDepth').textContent = r.totalDepth ? r.totalDepth + "'" : '—';
   document.getElementById('mDistrict').textContent = r.district || '—';
   document.getElementById('mSection').textContent = r.section || '—';
@@ -549,7 +606,7 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModalDir
       <span class="modal-county county-b" id="mCounty"></span>
       <div class="modal-grid" style="margin-top:12px">
         <div class="modal-field">
-          <div class="modal-field-label">Permit #</div>
+          <div class="modal-field-label">Status #</div>
           <div class="modal-field-value mono" id="mPermit"></div>
         </div>
         <div class="modal-field">
@@ -557,8 +614,16 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModalDir
           <div class="modal-field-value" id="mWell"></div>
         </div>
         <div class="modal-field">
-          <div class="modal-field-label">Date</div>
+          <div class="modal-field-label">Approved</div>
           <div class="modal-field-value mono" id="mDate"></div>
+        </div>
+        <div class="modal-field">
+          <div class="modal-field-label">Filed</div>
+          <div class="modal-field-value mono" id="mFiled"></div>
+        </div>
+        <div class="modal-field">
+          <div class="modal-field-label">Expires</div>
+          <div class="modal-field-value mono" id="mExpires"></div>
         </div>
         <div class="modal-field">
           <div class="modal-field-label">Depth</div>
