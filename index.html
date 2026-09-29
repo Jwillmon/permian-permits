@@ -172,7 +172,7 @@ tbody tr:last-child td{border-bottom:0}
 <header>
   <div class="hdr">
     <img class="logo" src="redbeard-mark.png" alt="Red Beard Resources">
-    <div class="brand"><h1>Permian Permits</h1><p>RRC drilling permits · Red Beard Resources</p></div>
+    <div class="brand"><h1>Permian Permits</h1><p>Texas RRC drilling permits · Red Beard Resources</p></div>
     <div class="hdr-right">
       <div class="updated"><span class="dot"></span><span id="lastUpdate">Loading…</span></div>
       <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
@@ -195,6 +195,7 @@ tbody tr:last-child td{border-bottom:0}
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" placeholder="Search operator, lease, survey, API, status #" autocomplete="off">
     </label>
+    <select id="region" aria-label="RRC district" title="Railroad Commission oil &amp; gas district"></select>
     <select id="county" aria-label="County"><option value="">All counties</option></select>
     <div class="datef">
       <select id="range" aria-label="Date range">
@@ -252,8 +253,14 @@ const SHEET_ID='14YyRf-In41XXFH4XNWF1hfQPa1597ZiBcYUqiqEnxM0';
 const TYPE_ORDER=['New Drill','Amendment','Recompletion','Reclass','Re-Enter','Reapplied','Field Transfer','Other'];
 const TYPE_COLOR={'New Drill':'--t-new','Amendment':'--t-amend','Recompletion':'--t-recomp','Reclass':'--t-reclass','Re-Enter':'--t-reenter'};
 const PAGE=250;
+// Railroad Commission oil & gas districts (office city). The RRC reports the
+// Permian Basin as districts 7C, 08 and 8A.
+const DISTRICTS=[['01','San Antonio'],['02','San Antonio'],['03','Houston'],['04','Corpus Christi'],['05','Henderson'],['06','Henderson'],['6E','East Texas Field'],['7B','Abilene'],['7C','San Angelo'],['08','Midland'],['8A','Lubbock'],['09','Wichita Falls'],['10','Pampa']];
+const PERMIAN_D=['7C','08','8A'];
+const normDist=d=>{d=String(d||'').trim().toUpperCase().replace(/^0+(?=\w)/,'');return /^\d$/.test(d)?'0'+d:d};
+const inRegion=(r,reg)=>reg==='all'?true:reg==='permian'?PERMIAN_D.includes(r.dist):r.dist===reg;
 let all=[], view=[], shown=PAGE;
-const st={type:'',status:'',county:'',range:'',basis:'any',from:'',to:'',q:'',sort:'date',asc:false};
+const st={type:'',status:'',region:'permian',county:'',range:'',basis:'any',from:'',to:'',q:'',sort:'date',asc:false};
 
 /* theme */
 (function(){let t=null;try{t=localStorage.getItem('pp-theme')}catch(e){}
@@ -296,7 +303,7 @@ function mapRow(r){
     lease:g(r,'Lease Name'), well:g(r,'Well #'),
     statusNo:g(r,'Status #'), docNo:g(r,'Permit #'),
     approvedOn:apprOk, submitted:sub, date:(approved&&apprOk)||sub,
-    district:g(r,'District'), section:sec, block:blk, survey:sur, abstract:abs,
+    district:g(r,'District'), dist:normDist(g(r,'District')), section:sec, block:blk, survey:sur, abstract:abs,
     loc:[sec&&('Sec '+sec),blk&&('Blk '+blk),sur].filter(Boolean).join(' · '),
     depth:g(r,'Depth').replace(/\D/g,''), api:g(r,'API #'), profile:g(r,'Wellbore Profile'),
     queue:g(r,'RRC Queue'), flag:g(r,'Flag')!=='', notes:g(r,'Notes'), scraped:g(r,'Scraped At'),
@@ -313,8 +320,6 @@ async function load(){
     const last=all.map(r=>r.scraped).filter(Boolean).sort().pop();
     if(last){const d=new Date(last.replace(' UTC','Z').replace(' ','T'));
       if(!isNaN(d))document.getElementById('lastUpdate').innerHTML='<span class="long">Updated </span>'+d.toLocaleString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' CT';}
-    const counties=[...new Set(all.map(r=>r.county))].sort();
-    document.getElementById('county').innerHTML='<option value="">All counties ('+counties.length+')</option>'+counties.map(c=>`<option>${esc(c)}</option>`).join('');
     document.getElementById('loading').remove();
     readHash(); render();
   }catch(e){console.error(e);document.getElementById('loading').innerHTML='Couldn\'t load permit data. Refresh to try again.'}
@@ -333,7 +338,8 @@ function inRange(r){
 function matches(r,skip){
   if(skip!=='type'&&st.type&&r.type!==st.type)return false;
   if(skip!=='status'&&st.status&&r.status!==st.status)return false;
-  if(st.county&&r.county!==st.county)return false;
+  if(skip!=='geo'&&!inRegion(r,st.region))return false;
+  if(skip!=='geo'&&st.county&&r.county!==st.county)return false;
   if(!inRange(r))return false;
   if(st.q){const h=[r.operator,r.lease,r.well,r.county,r.survey,r.api,r.statusNo,r.type].join(' ').toLowerCase();
     if(!st.q.split(/\s+/).every(w=>h.includes(w)))return false}
@@ -346,7 +352,24 @@ function cmp(a,b){
   return (st.asc?c:-c)||(b.date||'').localeCompare(a.date||'');
 }
 
+function fillSelects(){
+  const base=all.filter(r=>matches(r,'geo'));
+  const rc={};base.forEach(r=>rc[r.dist]=(rc[r.dist]||0)+1);
+  const n=k=>(rc[k]||0).toLocaleString();
+  const perm=PERMIAN_D.reduce((a,k)=>a+(rc[k]||0),0);
+  document.getElementById('region').innerHTML=
+    `<option value="permian">Permian Basin · 7C, 08, 8A (${perm.toLocaleString()})</option><option value="all">All Texas (${base.length.toLocaleString()})</option>`+
+    `<optgroup label="RRC districts">`+DISTRICTS.map(([k,c])=>`<option value="${k}">District ${k} · ${c} (${n(k)})</option>`).join('')+`</optgroup>`;
+  document.getElementById('region').value=st.region;
+  const inReg=base.filter(r=>inRegion(r,st.region));
+  const cc={};inReg.forEach(r=>cc[r.county]=(cc[r.county]||0)+1);
+  const counties=Object.keys(cc).sort();
+  if(st.county&&!cc[st.county])counties.push(st.county),counties.sort();
+  document.getElementById('county').innerHTML=`<option value="">All counties (${Object.keys(cc).length})</option>`+counties.map(c=>`<option value="${esc(c)}">${esc(c)} (${cc[c]||0})</option>`).join('');
+  document.getElementById('county').value=st.county;
+}
 function render(){
+  fillSelects();
   // chips: counts ignore the type filter itself
   const forChips=all.filter(r=>matches(r,'type'));
   const tc={};forChips.forEach(r=>tc[r.type]=(tc[r.type]||0)+1);
@@ -460,10 +483,10 @@ function exportCsv(){
 }
 
 /* shareable filters in the URL */
-function writeHash(){const p=new URLSearchParams();Object.entries(st).forEach(([k,v])=>{if(v!==''&&!(k==='sort'&&v==='date')&&!(k==='asc'&&v===false)&&!(k==='basis'&&v==='any')&&!((k==='from'||k==='to')&&st.range!=='custom'))p.set(k,v)});
+function writeHash(){const p=new URLSearchParams();Object.entries(st).forEach(([k,v])=>{if(v!==''&&!(k==='sort'&&v==='date')&&!(k==='asc'&&v===false)&&!(k==='basis'&&v==='any')&&!(k==='region'&&v==='permian')&&!((k==='from'||k==='to')&&st.range!=='custom'))p.set(k,v)});
   const h=p.toString();history.replaceState(null,'',h?'#'+h:location.pathname)}
 function readHash(){const p=new URLSearchParams(location.hash.slice(1));
-  ['type','status','county','range','basis','from','to','q','sort'].forEach(k=>{if(p.has(k))st[k]=p.get(k)});st.asc=p.get('asc')==='true';
+  ['type','status','region','county','range','basis','from','to','q','sort'].forEach(k=>{if(p.has(k))st[k]=p.get(k)});st.asc=p.get('asc')==='true';
   document.getElementById('q').value=st.q;document.getElementById('county').value=st.county;document.getElementById('range').value=st.range;document.getElementById('basis').value=st.basis;
   document.getElementById('dFrom').value=st.from;document.getElementById('dTo').value=st.to;document.getElementById('customWrap').hidden=st.range!=='custom';
   document.querySelectorAll('#statusSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.status));}
@@ -473,6 +496,7 @@ document.getElementById('chips').addEventListener('click',e=>{const b=e.target.c
 document.getElementById('statusSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.status=b.dataset.v;
   document.querySelectorAll('#statusSeg button').forEach(x=>x.classList.toggle('on',x===b));shown=PAGE;render()});
 document.getElementById('county').addEventListener('change',e=>{st.county=e.target.value;shown=PAGE;render()});
+document.getElementById('region').addEventListener('change',e=>{st.region=e.target.value;st.county='';shown=PAGE;render()});
 document.getElementById('range').addEventListener('change',e=>{st.range=e.target.value;const c=st.range==='custom';document.getElementById('customWrap').hidden=!c;
   if(c&&!st.from){st.from=daysAgo(7);st.to=daysAgo(0);document.getElementById('dFrom').value=st.from;document.getElementById('dTo').value=st.to}
   shown=PAGE;render()});
