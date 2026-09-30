@@ -725,8 +725,12 @@ function drawMap(){
       m.bindPopup(`<b>${esc(r.lease)} ${esc(r.well)}</b><br>${esc(opName(r.operator))}<br>${esc(r.type)} · ${r.status==='APPROVED'?'Approved':'Filed'} ${fmtDate(r.date)}<br><a data-open="${esc(r.statusNo)}">Details →</a>`);
       m.addTo(mapLayer);
     });
-    const key=[st.region,st.county,st.type,st.status,st.range,st.from,st.to,st.q].join('|');
-    if(key!==mapKey&&pts.length){mapKey=key;map.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lon])),{padding:[30,30],maxZoom:12})}
+    /* only re-frame the map when the area filter changes (district / county), never for date, type, status or search */
+    const key=st.region+'|'+st.county;
+    if(key!==mapKey){let bb=null;
+      if(st.county&&countyLayer)countyLayer.eachLayer(l=>{if(normLoc(l.feature.properties.name)===normLoc(st.county))bb=l.getBounds()});
+      if(!bb&&pts.length)bb=L.latLngBounds(pts.map(r=>[r.lat,r.lon]));
+      if(bb){mapKey=key;map.fitBounds(bb,{padding:[30,30],maxZoom:st.county?11:9})}}
     loadSurveys();
   }).catch(()=>{note.textContent='The map could not load. Check your connection.'});
 }
