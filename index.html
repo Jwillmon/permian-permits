@@ -66,9 +66,22 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 .chip.on .c{color:#fff;opacity:.8}
 .chip.zero{opacity:.45}
 
+.filters{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px}
+.frow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 16px;border-top:1px solid var(--border)}
+.frow:first-child{border-top:0}
+.flabel{width:52px;flex:none;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.flabel.gap{width:auto;margin-left:14px}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pills button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--ink-2)}
+.pills button:hover{background:var(--hover)}
+.pills button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.seg.sm{height:34px;margin-left:auto}
+.seg.sm button{font-size:12px;padding:0 10px}
+.linkbtn{border:0;background:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;padding:0 6px}
+.filters .chips{margin:0;flex:1}
 /* toolbar */
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-.search{position:relative;flex:1 1 260px;min-width:220px}
+.search{position:relative;flex:1 1 260px;min-width:200px}
 .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--faint)}
 .search input{width:100%;height:38px;border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:0 12px 0 34px;outline:none}
 .search input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
@@ -168,9 +181,12 @@ tbody tr:last-child td{border-bottom:0}
   .cards{display:block}
   .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;margin-right:-16px}
   .chip{flex:none}
-  .toolbar select,.seg{flex:1 1 auto}
+  .frow select,.seg{flex:1 1 auto}
+  .flabel,.flabel.gap{width:100%;margin-left:0}
+  .seg.sm{margin-left:0}
+  .frow{padding:10px 12px}
 }
-@media (max-width:480px){.logo{height:44px;padding:2px 6px}.brand{padding-left:10px}.brand h1{font-size:15px;white-space:nowrap}}
+@media (max-width:480px){.updated{font-size:11px;white-space:normal;text-align:right}.logo{height:44px;padding:2px 6px}.brand{padding-left:10px}.brand h1{font-size:15px;white-space:nowrap}}
 </style>
 </head>
 <body>
@@ -194,35 +210,41 @@ tbody tr:last-child td{border-bottom:0}
     <div class="stat week"><div class="l">Filed last 7 days</div><div class="n" id="sWeek">–</div><div class="s" id="sWeekSub">&nbsp;</div></div>
   </section>
 
-  <div class="chips" id="chips"></div>
-
-  <div class="toolbar">
-    <label class="search">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input id="q" type="search" placeholder="Search operator, lease, survey, API, status #" autocomplete="off">
-    </label>
-    <select id="region" aria-label="RRC district" title="Railroad Commission oil &amp; gas district"></select>
-    <select id="county" aria-label="County"><option value="">All counties</option></select>
-    <div class="datef">
-      <select id="range" aria-label="Date range">
-        <option value="">Any date</option>
-        <option value="0">Today</option><option value="1">Last 1 day</option><option value="2">Last 2 days</option>
-        <option value="3">Last 3 days</option><option value="7">Last 7 days</option><option value="14">Last 14 days</option>
-        <option value="30">Last 30 days</option><option value="60">Last 60 days</option><option value="90">Last 90 days</option>
-        <option value="custom">Custom range…</option>
-      </select>
-      <select id="basis" aria-label="Date type" title="Which date the range applies to">
-        <option value="any">Filed or approved</option><option value="filed">Filed</option><option value="approved">Approved</option>
-      </select>
+  <section class="filters">
+    <div class="frow">
+      <label class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Search operator, lease, survey, API, status #" autocomplete="off">
+      </label>
+      <button class="linkbtn" id="clearBtn" hidden>Clear filters</button>
+      <button class="icon-btn" onclick="exportCsv()" title="Download the filtered list">↓ CSV</button>
+    </div>
+    <div class="frow">
+      <span class="flabel">Date</span>
+      <div class="pills" id="rangeSeg">
+        <button data-v="">Any time</button><button data-v="0">Today</button><button data-v="2">2 days</button><button data-v="7">7 days</button><button data-v="30">30 days</button><button data-v="90">90 days</button><button data-v="custom">Custom…</button>
+      </div>
       <span class="custom" id="customWrap" hidden>
         <input type="date" id="dFrom" aria-label="From"><span class="sub">to</span><input type="date" id="dTo" aria-label="To">
       </span>
+      <div class="seg sm" id="basisSeg" title="Which date the range applies to">
+        <button data-v="any">Filed or approved</button><button data-v="filed">Filed</button><button data-v="approved">Approved</button>
+      </div>
     </div>
-    <div class="seg" id="statusSeg">
-      <button data-v="" class="on">All</button><button data-v="APPROVED">Approved</button><button data-v="PENDING">Pending</button><button data-v="STALLED" title="Pending more than 30 days with no approval">30+ days</button>
+    <div class="frow">
+      <span class="flabel">Area</span>
+      <select id="region" aria-label="RRC district" title="Railroad Commission oil &amp; gas district"></select>
+      <select id="county" aria-label="County"><option value="">All counties</option></select>
+      <span class="flabel gap">Status</span>
+      <div class="seg" id="statusSeg">
+        <button data-v="">All</button><button data-v="APPROVED">Approved</button><button data-v="PENDING">Pending</button><button data-v="STALLED" title="Pending more than 30 days with no approval">30+ days</button>
+      </div>
     </div>
-    <button class="icon-btn" onclick="exportCsv()" title="Download the filtered list">↓ CSV</button>
-  </div>
+    <div class="frow">
+      <span class="flabel">Type</span>
+      <div class="chips" id="chips"></div>
+    </div>
+  </section>
 
   <div class="card">
     <div class="tbl-wrap">
@@ -385,12 +407,20 @@ function fillSelects(){
   document.getElementById('county').innerHTML=`<option value="">All counties (${Object.keys(cc).length})</option>`+counties.map(c=>`<option value="${esc(c)}">${esc(c)} (${cc[c]||0})</option>`).join('');
   document.getElementById('county').value=st.county;
 }
+function syncSegs(){
+  document.querySelectorAll('#statusSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.status));
+  document.querySelectorAll('#rangeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.range));
+  document.querySelectorAll('#basisSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.basis));
+  document.getElementById('basisSeg').style.display=st.range===''?'none':'';
+  document.getElementById('customWrap').hidden=st.range!=='custom';
+  document.getElementById('clearBtn').hidden=!(st.type||st.status||st.county||st.range||st.q||st.region!=='permian');
+}
 function render(){
-  fillSelects();
+  fillSelects();syncSegs();
   // chips: counts ignore the type filter itself
   const forChips=all.filter(r=>matches(r,'type'));
   const tc={};forChips.forEach(r=>tc[r.type]=(tc[r.type]||0)+1);
-  const types=TYPE_ORDER.filter(t=>tc[t]||all.some(r=>r.type===t));
+  const types=TYPE_ORDER.filter(t=>tc[t]||st.type===t);
   document.getElementById('chips').innerHTML=
     `<button class="chip ${!st.type?'on':''}" data-t=""><span>All types</span><span class="c">${forChips.length.toLocaleString()}</span></button>`+
     types.map(t=>`<button class="chip ${st.type===t?'on':''} ${tc[t]?'':'zero'}" data-t="${esc(t)}" style="--tc:var(${TYPE_COLOR[t]||'--t-other'})"><i></i><span>${esc(t)}</span><span class="c">${(tc[t]||0).toLocaleString()}</span></button>`).join('');
@@ -508,20 +538,20 @@ function writeHash(){const p=new URLSearchParams();Object.entries(st).forEach(([
   const h=p.toString();history.replaceState(null,'',h?'#'+h:location.pathname)}
 function readHash(){const p=new URLSearchParams(location.hash.slice(1));
   ['type','status','region','county','range','basis','from','to','q','sort'].forEach(k=>{if(p.has(k))st[k]=p.get(k)});st.asc=p.get('asc')==='true';
-  document.getElementById('q').value=st.q;document.getElementById('county').value=st.county;document.getElementById('range').value=st.range;document.getElementById('basis').value=st.basis;
+  document.getElementById('q').value=st.q;document.getElementById('county').value=st.county;
   document.getElementById('dFrom').value=st.from;document.getElementById('dTo').value=st.to;document.getElementById('customWrap').hidden=st.range!=='custom';
-  document.querySelectorAll('#statusSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.status));}
+  syncSegs();}
 
 /* events */
 document.getElementById('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;st.type=b.dataset.t;shown=PAGE;render()});
-document.getElementById('statusSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.status=b.dataset.v;
-  document.querySelectorAll('#statusSeg button').forEach(x=>x.classList.toggle('on',x===b));shown=PAGE;render()});
+document.getElementById('statusSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.status=b.dataset.v;shown=PAGE;render()});
+document.getElementById('basisSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.basis=b.dataset.v;shown=PAGE;render()});
+document.getElementById('clearBtn').addEventListener('click',()=>{Object.assign(st,{type:'',status:'',region:'permian',county:'',range:'',basis:'any',from:'',to:'',q:''});document.getElementById('q').value='';shown=PAGE;render()});
 document.getElementById('county').addEventListener('change',e=>{st.county=e.target.value;shown=PAGE;render()});
 document.getElementById('region').addEventListener('change',e=>{st.region=e.target.value;st.county='';shown=PAGE;render()});
-document.getElementById('range').addEventListener('change',e=>{st.range=e.target.value;const c=st.range==='custom';document.getElementById('customWrap').hidden=!c;
+document.getElementById('rangeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.range=b.dataset.v;const c=st.range==='custom';
   if(c&&!st.from){st.from=daysAgo(7);st.to=daysAgo(0);document.getElementById('dFrom').value=st.from;document.getElementById('dTo').value=st.to}
   shown=PAGE;render()});
-document.getElementById('basis').addEventListener('change',e=>{st.basis=e.target.value;shown=PAGE;render()});
 document.getElementById('dFrom').addEventListener('change',e=>{st.from=e.target.value;shown=PAGE;render()});
 document.getElementById('dTo').addEventListener('change',e=>{st.to=e.target.value;shown=PAGE;render()});
 let qt;document.getElementById('q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{st.q=e.target.value.trim().toLowerCase();shown=PAGE;render()},150)});
