@@ -86,6 +86,7 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 .leaflet-popup-content{font:13px/1.4 'Inter',system-ui,sans-serif}
 .sec-lbl{font:600 11px/1 'Inter',system-ui,sans-serif;color:#1f2937;text-shadow:0 0 3px #fff,0 0 3px #fff;white-space:nowrap;pointer-events:none;text-align:center}
 .sec-lbl small{display:block;font-weight:500;font-size:9px;color:#475569}
+.blk-lbl{font-size:12px;font-weight:700;color:#0f172a}.blk-lbl small{font-size:9px}
 .survey-pop td{padding:1px 8px 1px 0}.survey-pop .pl{max-height:160px;overflow:auto;margin-top:6px;border-top:1px solid #e5e7eb;padding-top:4px}
 .leaflet-popup-content b{font-weight:600}
 .leaflet-popup-content a{color:var(--accent);cursor:pointer;font-weight:600}
@@ -576,18 +577,21 @@ function pickCounty(name){
   map.closeTooltip&&countyLayer.eachLayer(l=>l.closeTooltip());
   shown=PAGE;render();
 }
-/* Original Texas Land Survey grid (RRC survey lines: survey / block / section / abstract), shown when zoomed in */
+/* Original Texas Land Survey grid (RRC survey lines). Zoom 10-12: block outlines + block labels. Zoom 13+: sections too. */
 const OTLS='https://services1.arcgis.com/7DRakJXKPEhwv0fM/arcgis/rest/services/Original_Texas_Land_Survey/FeatureServer/0/query';
-const SURVEY_ZOOM=12,LABEL_ZOOM=13,TILE=0.2;
-let surveyLayer=null,secLabels=null,surveySeen=new Set(),surveyTiles={},surveyFeats=[];
-const surveyStyle=()=>({color:'#1f2937',weight:.7,opacity:.55,fill:true,fillOpacity:0});
+const SURVEY_ZOOM=10,SECTION_ZOOM=13,TILE=0.25;
+let surveyLayer=null,secLabels=null,blockLines=null,surveySeen=new Set(),surveyTiles={},surveyFeats=[],blockGroups={},blockTimer=0;
+const surveyStyle=()=>{const s=map&&map.getZoom()>=SECTION_ZOOM;return {color:'#1f2937',weight:.7,opacity:s?.5:0,fill:true,fillOpacity:0}};
+const tr=s=>String(s||'').trim();
+function blockKey(p){const b=tr(p.LEVEL2_BLO);return b?normLoc(p.LEVEL1_SUR)+'|B'+normLoc(b):normLoc(p.LEVEL1_SUR)+'|A'+normLoc(p.ABSTRACT_L)}
 function loadSurveys(){
   if(!map||!surveyLayer)return;
   const z=map.getZoom(),note=document.getElementById('gridNote');
   if(countyLayer)countyLayer.setStyle(countyStyle);
-  if(z<SURVEY_ZOOM){if(map.hasLayer(surveyLayer)){map.removeLayer(surveyLayer);map.removeLayer(secLabels)}if(note)note.textContent='Zoom in to see survey sections & blocks';return}
-  if(!map.hasLayer(surveyLayer)){surveyLayer.addTo(map);secLabels.addTo(map)}
-  if(note)note.textContent='';
+  if(z<SURVEY_ZOOM){[surveyLayer,secLabels,blockLines].forEach(l=>map.hasLayer(l)&&map.removeLayer(l));if(note)note.textContent='Zoom in to see survey blocks & sections';return}
+  [surveyLayer,blockLines,secLabels].forEach(l=>map.hasLayer(l)||l.addTo(map));
+  surveyLayer.setStyle(surveyStyle);
+  if(note)note.textContent=z<SECTION_ZOOM?'Blocks shown · zoom in for sections':'';
   const b=map.getBounds(),jobs=[];
   for(let x=Math.floor(b.getWest()/TILE);x<=Math.floor(b.getEast()/TILE);x++)
     for(let y=Math.floor(b.getSouth()/TILE);y<=Math.floor(b.getNorth()/TILE);y++){
@@ -595,22 +599,42 @@ function loadSurveys(){
       const env=[x*TILE,y*TILE,(x+1)*TILE,(y+1)*TILE].map(v=>v.toFixed(4)).join(',');
       surveyTiles[k]=fetch(`${OTLS}?where=1%3D1&geometry=${env}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID,ABSTRACT_L,LEVEL1_SUR,LEVEL2_BLO,LEVEL3_SUR,LEVEL4_SUR&outSR=4326&geometryPrecision=5&f=geojson`)
         .then(r=>r.json()).then(gj=>{const add=(gj.features||[]).filter(f=>{const id=f.id??f.properties.OBJECTID;if(surveySeen.has(id))return false;surveySeen.add(id);return true});
-          add.forEach(f=>{f.properties._c=ringCenter(f.geometry)});surveyFeats.push(...add);surveyLayer.addData({type:'FeatureCollection',features:add});surveyLayer.bringToBack();if(countyLayer)countyLayer.bringToBack()})
+          add.forEach(f=>{f.properties._c=ringCenter(f.geometry);f.properties._k=blockKey(f.properties)});surveyFeats.push(...add);
+          surveyLayer.addData({type:'FeatureCollection',features:add});surveyLayer.bringToBack();if(countyLayer)countyLayer.bringToBack();queueBlocks()})
         .catch(()=>{delete surveyTiles[k]});
       jobs.push(surveyTiles[k]);
     }
-  Promise.all(jobs).then(()=>{if(countyLayer)countyLayer.bringToBack();drawSecLabels()});
-  if(!jobs.length)drawSecLabels();
+  drawSecLabels();
 }
+function queueBlocks(){clearTimeout(blockTimer);blockTimer=setTimeout(()=>{buildBlocks();drawSecLabels()},250)}
+/* block outline = section edges that are not shared with another section of the same block */
+function buildBlocks(){
+  const seg={},q=v=>v[0].toFixed(4)+','+v[1].toFixed(4);blockGroups={};
+  for(const f of surveyFeats){const k=f.properties._k,g=f.geometry;
+    (blockGroups[k]=blockGroups[k]||[]).push(f);
+    const polys=g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];
+    for(const p of polys)for(const r of p)for(let i=1;i<r.length;i++){const a=q(r[i-1]),c=q(r[i]);if(a===c)continue;
+      const key=a<c?a+'|'+c:c+'|'+a,e=seg[key]||(seg[key]={pts:[r[i-1],r[i]],g:{}});e.g[k]=(e.g[k]||0)+1}}
+  const lines=[];for(const key in seg){const e=seg[key];if(Object.values(e.g).some(n=>n===1)||Object.keys(e.g).length>1)lines.push(e.pts.map(v=>[v[1],v[0]]))}
+  blockLines.clearLayers();blockLines.addLayer(L.polyline(lines,{color:'#0f172a',weight:1.8,opacity:.75,interactive:false}));
+}
+function groupCenter(fs){let a=0,la=0,lo=0;for(const f of fs){const c=f.properties._c;if(!c)continue;const w=f.properties.Shape__Area||1;a+=w;la+=c[0]*w;lo+=c[1]*w}return a?[la/a,lo/a]:null}
 function drawSecLabels(){
-  secLabels.clearLayers();
-  if(map.getZoom()<LABEL_ZOOM)return;
-  const b=map.getBounds().pad(.1);let n=0;
+  if(!secLabels)return;secLabels.clearLayers();
+  const z=map.getZoom();if(z<SURVEY_ZOOM)return;
+  const b=map.getBounds().pad(.05);let n=0;
+  if(z<SECTION_ZOOM){
+    for(const k in blockGroups){const fs=blockGroups[k],p=fs[0].properties,c=groupCenter(fs);if(!c||!b.contains(c))continue;if(++n>400)break;
+      const blk=tr(p.LEVEL2_BLO),sv=tr(p.LEVEL1_SUR);if(!blk&&fs.length<2&&z<12)continue;
+      secLabels.addLayer(L.marker(c,{interactive:false,keyboard:false,icon:L.divIcon({className:'sec-lbl blk-lbl',iconSize:[110,30],iconAnchor:[55,15],
+        html:(blk?'Blk '+esc(blk):esc(tr(p.ABSTRACT_L)))+(sv?`<small>${esc(sv.slice(0,22))}</small>`:'')})}));}
+    return;
+  }
   for(const f of surveyFeats){const c=f.properties._c;if(!c||!b.contains(c))continue;if(++n>900)break;
-    const p=f.properties,sec=(p.LEVEL3_SUR||'').trim(),blk=(p.LEVEL2_BLO||'').trim();
-    const main=sec||(p.ABSTRACT_L||'').trim();if(!main)continue;
+    const p=f.properties,sec=tr(p.LEVEL3_SUR),blk=tr(p.LEVEL2_BLO);
+    const main=sec||tr(p.ABSTRACT_L);if(!main)continue;
     secLabels.addLayer(L.marker(c,{interactive:false,keyboard:false,icon:L.divIcon({className:'sec-lbl',iconSize:[70,24],iconAnchor:[35,12],
-      html:esc(main)+(map.getZoom()>=14&&blk?`<small>Blk ${esc(blk)}</small>`:'')})}));}
+      html:esc(main)+(z>=14&&blk?`<small>Blk ${esc(blk)}</small>`:'')})}));}
 }
 function ringCenter(g){
   const rings=g.type==='Polygon'?[g.coordinates[0]]:g.type==='MultiPolygon'?g.coordinates.map(p=>p[0]):[];
@@ -623,16 +647,24 @@ function inGeom(lat,lon,g){
   const inRing=r=>{let c=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const[xi,yi]=r[i],[xj,yj]=r[j];if((yi>lat)!==(yj>lat)&&lon<(xj-xi)*(lat-yi)/(yj-yi)+xi)c=!c}return c};
   return polys.some(p=>inRing(p[0])&&!p.slice(1).some(inRing));
 }
+const digits=s=>String(s||'').replace(/\D/g,'').replace(/^0+/,'');
+const firstTok=s=>normLoc(String(s||'').trim().split(/\s+/)[0]);
+function countyAt(c){let county='';if(c&&countyLayer)countyLayer.eachLayer(l=>{if(!county&&inGeom(c[0],c[1],l.feature.geometry))county=l.feature.properties.name});return county}
+function permitList(hits){return `<div class="pl">${hits.length?`<b>${hits.length} permit${hits.length===1?'':'s'} here</b>`+hits.slice(0,25).map(r=>`<div><a data-open="${esc(r.statusNo)}">${esc(r.lease)} ${esc(r.well)}</a> · ${esc(opName(r.operator))} · ${esc(r.type)} ${fmtDate(r.date)}${r.section?` · Sec ${esc(r.section)}`:''}</div>`).join('')+(hits.length>25?`<div class="sub">+${hits.length-25} more</div>`:''):'No permits here under the current filters'}</div>`}
+const row=(k,v)=>v?`<tr><td>${k}</td><td><b>${esc(v)}</b></td></tr>`:'';
 function surveyPopup(f){
-  const p=f.properties,t=s=>(s||'').trim(),digits=s=>String(s||'').replace(/\D/g,'').replace(/^0+/,'');
-  const c=p._c;let county='';
-  if(c&&countyLayer)countyLayer.eachLayer(l=>{if(!county&&inGeom(c[0],c[1],l.feature.geometry))county=l.feature.properties.name});
-  const ab=digits(p.ABSTRACT_L),sec=normLoc(p.LEVEL3_SUR),blk=normLoc(t(p.LEVEL2_BLO).split(/\s+/)[0]);
+  const p=f.properties,county=countyAt(p._c);
+  const ab=digits(p.ABSTRACT_L),sec=normLoc(p.LEVEL3_SUR),blk=firstTok(p.LEVEL2_BLO);
   const hits=view.filter(r=>(hasXY(r)&&inGeom(r.lat,r.lon,f.geometry))||
-    (county&&normLoc(r.county)===normLoc(county)&&((ab&&digits(r.abstract)===ab)||(!r.abstract&&sec&&normLoc(r.section)===sec&&blk&&normLoc(String(r.block).split(/\s+/)[0])===blk))));
-  const row=(k,v)=>v?`<tr><td>${k}</td><td><b>${esc(v)}</b></td></tr>`:'';
-  return `<div class="survey-pop"><table>${row('Section',t(p.LEVEL3_SUR))}${row('Block',t(p.LEVEL2_BLO))}${row('Survey',t(p.LEVEL1_SUR))}${row('Sub',t(p.LEVEL4_SUR))}${row('Abstract',t(p.ABSTRACT_L))}${row('County',county)}</table>`+
-    `<div class="pl">${hits.length?`<b>${hits.length} permit${hits.length===1?'':'s'} here</b>`+hits.slice(0,25).map(r=>`<div><a data-open="${esc(r.statusNo)}">${esc(r.lease)} ${esc(r.well)}</a> · ${esc(opName(r.operator))} · ${esc(r.type)} ${fmtDate(r.date)}</div>`).join(''):'No permits here under the current filters'}</div></div>`;
+    (county&&normLoc(r.county)===normLoc(county)&&((ab&&digits(r.abstract)===ab)||(!r.abstract&&sec&&normLoc(r.section)===sec&&blk&&firstTok(r.block)===blk))));
+  return `<div class="survey-pop"><table>${row('Section',tr(p.LEVEL3_SUR))}${row('Block',tr(p.LEVEL2_BLO))}${row('Survey',tr(p.LEVEL1_SUR))}${row('Sub',tr(p.LEVEL4_SUR))}${row('Abstract',tr(p.ABSTRACT_L))}${row('County',county)}</table>${permitList(hits)}</div>`;
+}
+function blockPopup(f){
+  const p=f.properties,fs=blockGroups[p._k]||[f],county=countyAt(groupCenter(fs)||p._c);
+  const blk=firstTok(p.LEVEL2_BLO),sv=normLoc(p.LEVEL1_SUR).slice(0,3),abs=new Set(fs.map(x=>digits(x.properties.ABSTRACT_L)).filter(Boolean));
+  const hits=view.filter(r=>(hasXY(r)&&fs.some(x=>inGeom(r.lat,r.lon,x.geometry)))||
+    (county&&normLoc(r.county)===normLoc(county)&&((r.abstract&&abs.has(digits(r.abstract)))||(!r.abstract&&blk&&firstTok(r.block)===blk&&(!r.survey||normLoc(r.survey).startsWith(sv))))));
+  return `<div class="survey-pop"><table>${row('Block',tr(p.LEVEL2_BLO)||'—')}${row('Survey',tr(p.LEVEL1_SUR))}${row('Sections',String(fs.length))}${row('County',county)}</table>${permitList(hits)}<div class="sub" style="margin-top:4px">Zoom in to see individual sections</div></div>`;
 }
 function ensureLeaflet(){
   if(leafletP)return leafletP;
@@ -661,9 +693,10 @@ function drawMap(){
         countyLayer.bringToBack();styleCounties();
       }).catch(()=>{});
       surveyLayer=L.geoJSON(null,{style:surveyStyle,onEachFeature:(f,l)=>{
-        l.on('mouseover',()=>l.setStyle({weight:2.2,opacity:.9}));l.on('mouseout',()=>l.setStyle(surveyStyle()));
-        l.on('click',e=>{L.DomEvent.stop(e);L.popup().setLatLng(e.latlng).setContent(surveyPopup(f)).openOn(map)});
+        l.on('mouseover',()=>{if(map.getZoom()>=SECTION_ZOOM)l.setStyle({weight:2.2,opacity:.9})});l.on('mouseout',()=>l.setStyle(surveyStyle()));
+        l.on('click',e=>{L.DomEvent.stop(e);L.popup({maxWidth:340}).setLatLng(e.latlng).setContent(map.getZoom()>=SECTION_ZOOM?surveyPopup(f):blockPopup(f)).openOn(map)});
       }}).addTo(map);
+      blockLines=L.layerGroup().addTo(map);
       secLabels=L.layerGroup().addTo(map);
       map.on('moveend',loadSurveys);
     }
