@@ -545,6 +545,34 @@ function paint(){
 }
 /* map */
 let leafletP=null,map=null,mapLayer=null,mapKey='';
+/* Texas county outlines (US Census via us-atlas), loaded only when the map opens */
+let countyP=null,countyLayer=null,countyCounts={},countyMax=1;
+function ensureCounties(){
+  if(countyP)return countyP;
+  countyP=new Promise((res,rej)=>{const js=document.createElement('script');js.src='https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js';js.onload=res;js.onerror=rej;document.head.appendChild(js)})
+    .then(()=>fetch('https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json')).then(r=>r.json())
+    .then(t=>{const g=t.objects.counties;return topojson.feature(t,{type:'GeometryCollection',geometries:g.geometries.filter(x=>String(x.id).startsWith('48'))})});
+  countyP.catch(()=>{countyP=null});
+  return countyP;
+}
+function countyStyle(f){
+  const k=normLoc(f.properties.name),c=countyCounts[k]||0,sel=st.county&&normLoc(st.county)===k;
+  const acc=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#b3401e';
+  return {color:sel?acc:'#334155',weight:sel?3:.8,opacity:sel?1:.55,fillColor:acc,fillOpacity:c?.06+.3*Math.sqrt(c/countyMax):.02};
+}
+function styleCounties(){
+  countyCounts={};all.filter(r=>matches(r,'geo')).forEach(r=>{const k=normLoc(r.county);countyCounts[k]=(countyCounts[k]||0)+1});
+  countyMax=Math.max(1,...Object.values(countyCounts));
+  if(countyLayer){countyLayer.setStyle(countyStyle);countyLayer.bringToBack()}
+}
+function pickCounty(name){
+  const k=normLoc(name);
+  if(st.county&&normLoc(st.county)===k){st.county=''}
+  else{st.county=(all.find(r=>normLoc(r.county)===k)||{}).county||name.toUpperCase();
+    if(!all.some(r=>r.county===st.county&&inRegion(r,st.region)))st.region='all'}
+  map.closeTooltip&&countyLayer.eachLayer(l=>l.closeTooltip());
+  shown=PAGE;render();
+}
 function ensureLeaflet(){
   if(leafletP)return leafletP;
   leafletP=new Promise((res,rej)=>{
@@ -558,14 +586,22 @@ function drawMap(){
   const note=document.getElementById('mapNote');
   if(st.view!=='map'){note.textContent='';return}
   const pts=view.filter(hasXY);
-  note.textContent=pts.length?`${pts.length.toLocaleString()} of ${view.length.toLocaleString()} permits have map coordinates`:'Map coordinates are still loading from the RRC; check back after the next update.';
+  note.textContent=pts.length?`${pts.length.toLocaleString()} of ${view.length.toLocaleString()} permits have map coordinates · shading = permits per county; click a county to filter`:'Map coordinates are still loading from the RRC; check back after the next update.';
   ensureLeaflet().then(()=>{
     if(!map){
       map=L.map('map',{preferCanvas:true}).setView([31.8,-102.3],7);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
       mapLayer=L.layerGroup().addTo(map);
+      ensureCounties().then(gj=>{
+        countyLayer=L.geoJSON(gj,{style:countyStyle,onEachFeature:(f,l)=>{
+          l.bindTooltip(()=>{const c=countyCounts[normLoc(f.properties.name)]||0;return `<b>${esc(f.properties.name)} County</b><br>${c.toLocaleString()} permit${c===1?'':'s'}`},{sticky:true,direction:'top',opacity:.95});
+          l.on('click',()=>pickCounty(f.properties.name));
+        }}).addTo(map);
+        countyLayer.bringToBack();styleCounties();
+      }).catch(()=>{});
     }
     map.invalidateSize();
+    styleCounties();
     mapLayer.clearLayers();
     const css=getComputedStyle(document.documentElement);
     pts.forEach(r=>{
