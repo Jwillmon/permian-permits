@@ -84,9 +84,9 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 .mapcard{padding:0}
 #map{height:calc(100vh - 230px);min-height:440px;border-radius:12px;z-index:1}
 .leaflet-popup-content{font:13px/1.4 'Inter',system-ui,sans-serif}
-.sec-lbl{font:600 11px/1 'Inter',system-ui,sans-serif;color:#1f2937;text-shadow:0 0 3px #fff,0 0 3px #fff;white-space:nowrap;pointer-events:none;text-align:center}
+.sec-lbl{font:500 10px/1 Arial,'Inter',system-ui,sans-serif;color:#8a9099;text-shadow:0 0 2px #fff,0 0 2px #fff;white-space:nowrap;pointer-events:none;text-align:center}
 .sec-lbl small{display:block;font-weight:500;font-size:9px;color:#475569}
-.blk-lbl{font-size:12px;font-weight:700;color:#0f172a}.blk-lbl small{font-size:9px}
+.blk-lbl{font-size:13px;font-weight:400;color:#6b7078;letter-spacing:.2px;text-transform:uppercase}.blk-lbl span{display:inline-block;transform-origin:center}
 .survey-pop td{padding:1px 8px 1px 0}.survey-pop .pl{max-height:160px;overflow:auto;margin-top:6px;border-top:1px solid #e5e7eb;padding-top:4px}
 .leaflet-popup-content b{font-weight:600}
 .leaflet-popup-content a{color:var(--accent);cursor:pointer;font-weight:600}
@@ -581,7 +581,7 @@ function pickCounty(name){
 const OTLS='https://services1.arcgis.com/7DRakJXKPEhwv0fM/arcgis/rest/services/Original_Texas_Land_Survey/FeatureServer/0/query';
 const SURVEY_ZOOM=10,SECTION_ZOOM=13,TILE=0.25;
 let surveyLayer=null,secLabels=null,blockLines=null,surveySeen=new Set(),surveyTiles={},surveyFeats=[],blockGroups={},blockTimer=0;
-const surveyStyle=()=>{const s=map&&map.getZoom()>=SECTION_ZOOM;return {color:'#1f2937',weight:.7,opacity:s?.5:0,fill:true,fillOpacity:0}};
+const surveyStyle=()=>{const z=map?map.getZoom():0;return {color:'#9aa1aa',weight:z>=SECTION_ZOOM?.8:.5,opacity:z>=SECTION_ZOOM?.85:z>=11?.6:0,fill:true,fillOpacity:0}};
 const tr=s=>String(s||'').trim();
 function blockKey(p){const b=tr(p.LEVEL2_BLO);return b?normLoc(p.LEVEL1_SUR)+'|B'+normLoc(b):normLoc(p.LEVEL1_SUR)+'|A'+normLoc(p.ABSTRACT_L)}
 function loadSurveys(){
@@ -616,7 +616,17 @@ function buildBlocks(){
     for(const p of polys)for(const r of p)for(let i=1;i<r.length;i++){const a=q(r[i-1]),c=q(r[i]);if(a===c)continue;
       const key=a<c?a+'|'+c:c+'|'+a,e=seg[key]||(seg[key]={pts:[r[i-1],r[i]],g:{}});e.g[k]=(e.g[k]||0)+1}}
   const lines=[];for(const key in seg){const e=seg[key];if(Object.values(e.g).some(n=>n===1)||Object.keys(e.g).length>1)lines.push(e.pts.map(v=>[v[1],v[0]]))}
-  blockLines.clearLayers();blockLines.addLayer(L.polyline(lines,{color:'#0f172a',weight:1.8,opacity:.75,interactive:false}));
+  blockLines.clearLayers();blockLines.addLayer(L.polyline(lines,{color:'#5b6068',weight:1.5,opacity:.9,interactive:false}));
+}
+/* angle for a block label: follow the long axis of tall/narrow blocks, else horizontal */
+function blockAngle(fs){
+  if(fs.length<3)return 0;const pts=fs.map(f=>f.properties._c).filter(Boolean);if(pts.length<3)return 0;
+  const k=Math.cos(pts[0][0]*Math.PI/180);let mx=0,my=0;pts.forEach(p=>{mx+=p[1]*k;my+=p[0]});mx/=pts.length;my/=pts.length;
+  let sxx=0,syy=0,sxy=0;pts.forEach(p=>{const x=p[1]*k-mx,y=p[0]-my;sxx+=x*x;syy+=y*y;sxy+=x*y});
+  const tr2=sxx+syy,det=sxx*syy-sxy*sxy,l1=tr2/2+Math.sqrt(Math.max(0,tr2*tr2/4-det)),l2=tr2-l1;
+  if(l1<4*Math.max(l2,1e-12))return 0;
+  let a=-Math.atan2(l1-sxx,sxy||1e-12)*180/Math.PI;if(!sxy)a=sxx>syy?0:-90;
+  a=Math.round(((a+90)%180+180)%180-90);return Math.abs(a)<12?0:a;
 }
 function groupCenter(fs){let a=0,la=0,lo=0;for(const f of fs){const c=f.properties._c;if(!c)continue;const w=f.properties.Shape__Area||1;a+=w;la+=c[0]*w;lo+=c[1]*w}return a?[la/a,lo/a]:null}
 function drawSecLabels(){
@@ -626,8 +636,9 @@ function drawSecLabels(){
   if(z<SECTION_ZOOM){
     for(const k in blockGroups){const fs=blockGroups[k],p=fs[0].properties,c=groupCenter(fs);if(!c||!b.contains(c))continue;if(++n>400)break;
       const blk=tr(p.LEVEL2_BLO),sv=tr(p.LEVEL1_SUR);if(!blk&&fs.length<2&&z<12)continue;
-      secLabels.addLayer(L.marker(c,{interactive:false,keyboard:false,icon:L.divIcon({className:'sec-lbl blk-lbl',iconSize:[110,30],iconAnchor:[55,15],
-        html:(blk?'Blk '+esc(blk):esc(tr(p.ABSTRACT_L)))+(sv?`<small>${esc(sv.slice(0,22))}</small>`:'')})}));}
+      const ang=blockAngle(fs);
+      secLabels.addLayer(L.marker(c,{interactive:false,keyboard:false,icon:L.divIcon({className:'sec-lbl blk-lbl',iconSize:[120,20],iconAnchor:[60,10],
+        html:`<span style="transform:rotate(${ang}deg)">${blk?'BLK '+esc(blk):esc(tr(p.ABSTRACT_L))}</span>`})}));}
     return;
   }
   for(const f of surveyFeats){const c=f.properties._c;if(!c||!b.contains(c))continue;if(++n>900)break;
@@ -683,7 +694,7 @@ function drawMap(){
   ensureLeaflet().then(()=>{
     if(!map){
       map=L.map('map',{preferCanvas:true}).setView([31.8,-102.3],7);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:18,subdomains:'abcd',attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}).addTo(map);
       mapLayer=L.layerGroup().addTo(map);
       ensureCounties().then(gj=>{
         countyLayer=L.geoJSON(gj,{style:countyStyle,onEachFeature:(f,l)=>{
