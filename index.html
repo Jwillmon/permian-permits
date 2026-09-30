@@ -677,6 +677,47 @@ function blockPopup(f){
     (county&&normLoc(r.county)===normLoc(county)&&((r.abstract&&abs.has(digits(r.abstract)))||(!r.abstract&&blk&&firstTok(r.block)===blk&&(!r.survey||normLoc(r.survey).startsWith(sv))))));
   return `<div class="survey-pop"><table>${row('Block',tr(p.LEVEL2_BLO)||'—')}${row('Survey',tr(p.LEVEL1_SUR))}${row('Sections',String(fs.length))}${row('County',county)}</table>${permitList(hits)}<div class="sub" style="margin-top:4px">Zoom in to see individual sections</div></div>`;
 }
+/* place permits that have no GPS yet at the center of their survey section (abstract, or section + block), per county in view; results cached in this browser */
+let approx={};try{approx=JSON.parse(localStorage.getItem('pp-approx-v1')||'{}')}catch(e){}
+const geoDone=new Set();let geoBusy=false;
+const nAbs=s=>normLoc(s).replace(/^A(?=[A-Z]?\d)/,'').replace(/^0+/,'');
+const needsGeo=r=>!hasXY(r)&&!approx[r.statusNo]&&r.county&&(r.abstract||r.section);
+async function geocodeVisible(){
+  if(geoBusy||!map||!countyLayer||st.view!=='map')return;
+  if(map.getZoom()<7&&!st.county)return;
+  const b=map.getBounds(),by={};
+  view.forEach(r=>{if(needsGeo(r)){const k=normLoc(r.county);if(!geoDone.has(k))(by[k]=by[k]||[]).push(r)}});
+  const jobs=[];countyLayer.eachLayer(l=>{const k=normLoc(l.feature.properties.name);if(by[k]&&b.intersects(l.getBounds()))jobs.push([k,l])});
+  if(!jobs.length)return;
+  geoBusy=true;let n=0;
+  for(let i=0;i<jobs.length;i+=4)await Promise.all(jobs.slice(i,i+4).map(([k,l])=>{geoDone.add(k);return geocodeCounty(l,by[k]).then(x=>n+=x).catch(()=>geoDone.delete(k))}));
+  geoBusy=false;
+  try{localStorage.setItem('pp-approx-v1',JSON.stringify(approx))}catch(e){}
+  if(n)drawMap();
+}
+async function geocodeCounty(l,rs){
+  const bb=l.getBounds(),env=[bb.getWest(),bb.getSouth(),bb.getEast(),bb.getNorth()].map(v=>v.toFixed(4)).join(',');
+  const q=s=>"'"+String(s).replace(/'/g,"''")+"'";
+  const abs=[...new Set(rs.filter(r=>r.abstract).map(r=>'A-'+String(r.abstract).trim().toUpperCase().replace(/^A-?/,'')))];
+  const secs=[...new Set(rs.filter(r=>!r.abstract&&r.section).map(r=>String(r.section).trim()))];
+  const cl=[];for(let i=0;i<abs.length;i+=60)cl.push(`ABSTRACT_L IN (${abs.slice(i,i+60).map(q).join(',')})`);
+  for(let i=0;i<secs.length;i+=60)cl.push(`LEVEL3_SUR IN (${secs.slice(i,i+60).map(q).join(',')})`);
+  const feats=[];
+  for(const where of cl){
+    const body=new URLSearchParams({where,geometry:env,geometryType:'esriGeometryEnvelope',inSR:'4326',spatialRel:'esriSpatialRelIntersects',outFields:'ABSTRACT_L,LEVEL1_SUR,LEVEL2_BLO,LEVEL3_SUR',returnGeometry:'false',returnCentroid:'true',outSR:'4326',f:'json'});
+    const j=await (await fetch(OTLS,{method:'POST',body})).json();
+    (j.features||[]).forEach(f=>{const c=f.centroid;if(c&&inGeom(c.y,c.x,l.feature.geometry))feats.push({p:f.attributes,c:[+c.y.toFixed(5),+c.x.toFixed(5)]})});
+  }
+  let n=0;
+  for(const r of rs){
+    const ab=r.abstract?nAbs(r.abstract):'',sec=normLoc(r.section),blk=firstTok(r.block);
+    let m=ab?feats.filter(f=>nAbs(f.p.ABSTRACT_L)===ab):[];
+    if(m.length>1&&sec){const m2=m.filter(f=>normLoc(f.p.LEVEL3_SUR)===sec);if(m2.length)m=m2}
+    if(!m.length&&sec)m=feats.filter(f=>normLoc(f.p.LEVEL3_SUR)===sec&&(!blk||firstTok(f.p.LEVEL2_BLO)===blk));
+    if(m.length){approx[r.statusNo]=m[0].c;n++}
+  }
+  return n;
+}
 function ensureLeaflet(){
   if(leafletP)return leafletP;
   leafletP=new Promise((res,rej)=>{
@@ -689,8 +730,9 @@ const hasXY=r=>isFinite(r.lat)&&isFinite(r.lon)&&r.lat>25&&r.lat<37&&r.lon<-93&&
 function drawMap(){
   const note=document.getElementById('mapNote');
   if(st.view!=='map'){note.textContent='';return}
-  const pts=view.filter(hasXY);
-  note.textContent=pts.length?`${pts.length.toLocaleString()} of ${view.length.toLocaleString()} permits have map coordinates · shading = permits per county; click a county to filter`:'Map coordinates are still loading from the RRC; check back after the next update.';
+  const pts=view.filter(hasXY),apx=view.filter(r=>!hasXY(r)&&approx[r.statusNo]);
+  const miss=view.length-pts.length-apx.length;
+  note.textContent=`${(pts.length+apx.length).toLocaleString()} of ${view.length.toLocaleString()} permits on the map`+(apx.length?` (${apx.length.toLocaleString()} placed at their section center — dashed pins)`:'')+(miss&&map&&map.getZoom()<7?` · zoom in to place ${miss.toLocaleString()} more`:'')+' · click a county to filter';
   ensureLeaflet().then(()=>{
     if(!map){
       map=L.map('map',{preferCanvas:true}).setView([31.8,-102.3],7);
@@ -703,7 +745,7 @@ function drawMap(){
           l.bindTooltip(()=>{const c=countyCounts[normLoc(f.properties.name)]||0;return `<b>${esc(f.properties.name)} County</b><br>${c.toLocaleString()} permit${c===1?'':'s'}`},{sticky:true,direction:'top',opacity:.95});
           l.on('click',()=>pickCounty(f.properties.name));
         }}).addTo(map);
-        countyLayer.bringToBack();styleCounties();
+        countyLayer.bringToBack();styleCounties();geocodeVisible();
       }).catch(()=>{});
       surveyLayer=L.geoJSON(null,{style:surveyStyle,onEachFeature:(f,l)=>{
         l.on('mouseover',()=>{if(map.getZoom()>=SECTION_ZOOM)l.setStyle({weight:2.2,opacity:.9})});l.on('mouseout',()=>l.setStyle(surveyStyle()));
@@ -712,6 +754,7 @@ function drawMap(){
       blockLines=L.layerGroup().addTo(map);
       secLabels=L.layerGroup().addTo(map);
       map.on('moveend',loadSurveys);
+      map.on('moveend',geocodeVisible);
     }
     map.invalidateSize();
     styleCounties();
@@ -725,6 +768,14 @@ function drawMap(){
       m.bindPopup(`<b>${esc(r.lease)} ${esc(r.well)}</b><br>${esc(opName(r.operator))}<br>${esc(r.type)} · ${r.status==='APPROVED'?'Approved':'Filed'} ${fmtDate(r.date)}<br><a data-open="${esc(r.statusNo)}">Details →</a>`);
       m.addTo(mapLayer);
     });
+    /* permits the RRC hasn't given GPS for yet: dashed pin at the center of their survey section */
+    apx.forEach(r=>{
+      const col=css.getPropertyValue(TYPE_COLOR[r.type]||'--t-other').trim()||'#6b7280',c=approx[r.statusNo];
+      const m=L.circleMarker(c,{radius:6,color:col,weight:2,dashArray:'3 2',fillColor:col,fillOpacity:.2});
+      m.bindPopup(`<b>${esc(r.lease)} ${esc(r.well)}</b><br>${esc(opName(r.operator))}<br>${esc(r.type)} · ${r.status==='APPROVED'?'Approved':'Filed'} ${fmtDate(r.date)}<br><span class="sub">Approximate: center of ${esc(r.loc||'its section')} (no GPS from the RRC yet)</span><br><a data-open="${esc(r.statusNo)}">Details →</a>`);
+      m.addTo(mapLayer);
+    });
+    geocodeVisible();
     /* only re-frame the map when the area filter changes (district / county), never for date, type, status or search */
     const key=st.region+'|'+st.county;
     if(key!==mapKey){let bb=null;
