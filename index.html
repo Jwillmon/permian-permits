@@ -14,7 +14,7 @@
   --accent:#9b1c14; --accent-soft:#fdf1f0; --accent-ink:#ffffff;
   --appr:#15803d; --appr-bg:#ecfdf3; --pend:#b45309; --pend-bg:#fffbeb;
   --shadow:0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06);
-  --t-new:#2563eb; --t-amend:#7c3aed; --t-recomp:#0d9488; --t-reclass:#ca8a04; --t-reenter:#ea580c; --t-other:#6b7280;
+  --t-new:#2563eb; --t-amend:#7c3aed; --t-recomp:#0d9488; --t-reclass:#ca8a04; --t-reenter:#ea580c; --t-side:#db2777; --t-deep:#0891b2; --t-plug:#65a30d; --t-other:#6b7280;
 }
 :root[data-theme="dark"]{
   --bg:#0f1115; --surface:#171a21; --surface-2:#1c2029; --hover:#222734;
@@ -23,7 +23,7 @@
   --accent:#ef5a4c; --accent-soft:#2a1715; --accent-ink:#ffffff;
   --appr:#4ade80; --appr-bg:#0f2a1b; --pend:#fbbf24; --pend-bg:#2b2110;
   --shadow:none;
-  --t-new:#60a5fa; --t-amend:#a78bfa; --t-recomp:#2dd4bf; --t-reclass:#facc15; --t-reenter:#fb923c; --t-other:#9ca3af;
+  --t-new:#60a5fa; --t-amend:#a78bfa; --t-recomp:#2dd4bf; --t-reclass:#facc15; --t-reenter:#fb923c; --t-side:#f472b6; --t-deep:#22d3ee; --t-plug:#a3e635; --t-other:#9ca3af;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:var(--bg);color:var(--ink);font:14px/1.45 'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
@@ -56,7 +56,7 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 
 /* type chips */
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.chip{border:1px solid color-mix(in srgb,var(--tc,var(--border)) 30%,var(--border));background:color-mix(in srgb,var(--tc,transparent) 7%,var(--surface));border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--ink-2);transition:background .12s,border-color .12s}
+.chip{border:1px solid color-mix(in srgb,var(--tc,var(--border)) 30%,var(--border));background:color-mix(in srgb,var(--tc,transparent) 7%,var(--surface));border-radius:999px;padding:5px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--ink-2);white-space:nowrap;flex:none;transition:background .12s,border-color .12s}
 .chip:hover{background:color-mix(in srgb,var(--tc,var(--ink)) 14%,var(--surface))}
 .chip .c{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .chip i{width:8px;height:8px;border-radius:50%;background:var(--tc,var(--t-other))}
@@ -78,7 +78,7 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 .seg.sm{height:34px;margin-left:auto}
 .seg.sm button{font-size:12px;padding:0 10px}
 .linkbtn{border:0;background:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;padding:0 6px}
-.filters .chips{margin:0;flex:1}
+.filters .chips{margin:0;flex:1;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;gap:6px;padding-bottom:2px}
 .fltbtn{display:none}
 /* toolbar */
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
@@ -165,6 +165,13 @@ tbody tr:last-child td{border-bottom:0}
 .grid dt{font-size:11.5px;color:var(--muted);font-weight:500}
 .grid dd{font-size:14px;font-weight:500;margin-top:2px;word-break:break-word}
 .d-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.rel{margin-top:22px}
+.rel h3{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;gap:8px;align-items:baseline}
+.rel h3 span{font-weight:500;color:var(--muted);font-size:12px}
+.rel-item{display:block;width:100%;text-align:left;border:1px solid var(--border);border-left:3px solid var(--tc,var(--border));background:var(--surface);border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer}
+.rel-item:hover{background:var(--hover)}
+.rel-item .t{font-size:13px;font-weight:600;color:var(--ink)}
+.rel-item .m{font-size:12px;color:var(--muted);margin-top:2px}
 .d-actions a{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-decoration:none;color:var(--ink-2);font-size:13px}
 .d-actions a:hover{background:var(--hover)}
 .notes{margin-top:14px;padding:10px 12px;background:var(--accent-soft);border-radius:8px;font-size:13px}
@@ -285,8 +292,8 @@ tbody tr:last-child td{border-bottom:0}
 
 <script>
 const SHEET_ID='14YyRf-In41XXFH4XNWF1hfQPa1597ZiBcYUqiqEnxM0';
-const TYPE_ORDER=['New Drill','Amendment','Recompletion','Reclass','Re-Enter','Reapplied','Field Transfer','Other'];
-const TYPE_COLOR={'New Drill':'--t-new','Amendment':'--t-amend','Recompletion':'--t-recomp','Reclass':'--t-reclass','Re-Enter':'--t-reenter'};
+const TYPE_ORDER=['New Drill','Amendment','Recompletion','Reclass','Re-Enter','Sidetrack','Deepen','Plug Back','Reapplied','Field Transfer','Other'];
+const TYPE_COLOR={'New Drill':'--t-new','Amendment':'--t-amend','Recompletion':'--t-recomp','Reclass':'--t-reclass','Re-Enter':'--t-reenter','Sidetrack':'--t-side','Deepen':'--t-deep','Plug Back':'--t-plug'};
 const TODAY_ISO=new Date().toISOString().slice(0,10);
 const MOBILE=matchMedia('(max-width:720px)');
 const PAGE=MOBILE.matches?80:250;
@@ -523,6 +530,14 @@ function paint(){
 function showMore(){shown+=PAGE;paint()}
 
 /* detail drawer */
+const normLoc=x=>String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+function related(r){
+  const sameLoc=x=>r.section&&x.county===r.county&&normLoc(x.section)===normLoc(r.section)&&normLoc(x.block)===normLoc(r.block)&&normLoc(x.survey)===normLoc(r.survey);
+  const sameLease=x=>r.lease&&x.operator===r.operator&&normLoc(x.lease)===normLoc(r.lease);
+  const out=[];
+  for(const x of all){if(x===r)continue;const a=sameLoc(x),b=sameLease(x);if(a||b)out.push([x,a&&b?'Same section & lease':a?'Same section':'Same lease'])}
+  return out.sort((p,q)=>(q[0].date||'').localeCompare(p[0].date||''));
+}
 function openDrawer(r){
   document.getElementById('dTitle').textContent=`${r.lease} ${r.well}`.trim();
   document.getElementById('dSub').textContent=opName(r.operator);
@@ -544,10 +559,23 @@ function openDrawer(r){
     <div class="d-actions">
       <a href="https://webapps.rrc.texas.gov/DP/initializePublicQueryAction.do" target="_blank" rel="noopener">RRC W-1 search ↗</a>
       ${r.api?`<a href="https://www.google.com/search?q=${encodeURIComponent('"'+r.api+'" '+r.lease)}" target="_blank" rel="noopener">Search API ↗</a>`:''}
-    </div>`;
+    </div>`+relHtml(r);
+  document.getElementById('dBody').scrollTop=0;
   document.getElementById('drawer').classList.add('open');document.getElementById('scrim').classList.add('open');
   document.getElementById('drawer').setAttribute('aria-hidden','false');
 }
+let relList=[];
+function relHtml(r){
+  relList=related(r);
+  if(!relList.length)return r.section?`<div class="rel"><h3>Nearby activity <span>none in the last 90 days</span></h3></div>`:'';
+  const ops=new Set(relList.map(([x])=>x.operator)).size;
+  return `<div class="rel"><h3>Other permits here <span>${relList.length} on this section/lease · ${ops} operator${ops===1?'':'s'}</span></h3>`+
+    relList.slice(0,30).map(([x,why],i)=>`<button class="rel-item" data-rel="${i}" style="--tc:var(${TYPE_COLOR[x.type]||'--t-other'})">
+      <div class="t">${esc(x.lease)} ${esc(x.well)} <span class="sub">· ${esc(x.type)}</span></div>
+      <div class="m">${esc(opName(x.operator))} · ${x.status==='APPROVED'?'Approved':'Filed'} ${fmtDate(x.date)} · ${why}</div></button>`).join('')+
+    (relList.length>30?`<div class="sub">+ ${relList.length-30} more</div>`:'')+`</div>`;
+}
+document.getElementById('dBody').addEventListener('click',e=>{const b=e.target.closest('.rel-item');if(b)openDrawer(relList[+b.dataset.rel][0])});
 function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('scrim').classList.remove('open');document.getElementById('drawer').setAttribute('aria-hidden','true')}
 
 /* CSV */
