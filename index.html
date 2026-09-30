@@ -143,6 +143,7 @@ tbody tr:last-child td{border-bottom:0}
 .banner b{color:var(--pend)}
 .star{color:var(--accent);margin-left:6px}
 .empty,.loading{padding:70px 20px;text-align:center;color:var(--muted)}
+.empty b{color:var(--ink)}.empty .lbtn{margin-top:14px;padding:8px 16px;border-radius:999px;border:0;background:var(--accent);color:#fff;font:600 13px/1 inherit;cursor:pointer}
 .spin{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;vertical-align:-4px;margin-right:8px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .foot{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);background:var(--surface-2)}
@@ -542,7 +543,7 @@ function paint(){
   });
   document.getElementById('tbody').innerHTML=tb;
   document.getElementById('cards').innerHTML=cd;
-  document.getElementById('empty').hidden=view.length>0;
+  const emp=document.getElementById('empty');emp.hidden=view.length>0;if(!view.length)emp.innerHTML=emptyMsg();
   drawMap();
   document.getElementById('footCount').textContent=`Showing ${rows.length.toLocaleString()} of ${view.length.toLocaleString()} permits`;
   const more=document.getElementById('moreBtn');more.hidden=view.length<=shown;
@@ -733,6 +734,7 @@ function drawMap(){
   const pts=view.filter(hasXY),apx=view.filter(r=>!hasXY(r)&&approx[r.statusNo]);
   const miss=view.length-pts.length-apx.length;
   note.textContent=`${(pts.length+apx.length).toLocaleString()} of ${view.length.toLocaleString()} permits on the map`+(apx.length?` (${apx.length.toLocaleString()} placed at their section center — dashed pins)`:'')+(miss&&map&&map.getZoom()<7?` · zoom in to place ${miss.toLocaleString()} more`:'')+' · click a county to filter';
+  if(!view.length&&st.range==='0'){const lp=latestPosted();if(lp&&lp<TODAY_ISO)note.textContent=`The RRC hasn't posted today's permits yet — latest posted: ${fmtDate(lp)} (pick 2 days to see them)`}
   ensureLeaflet().then(()=>{
     if(!map){
       map=L.map('map',{preferCanvas:true}).setView([31.8,-102.3],7);
@@ -867,6 +869,15 @@ document.getElementById('region').addEventListener('change',e=>{st.region=e.targ
 document.getElementById('rangeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.range=b.dataset.v;const c=st.range==='custom';
   if(c&&!st.from){st.from=daysAgo(7);st.to=daysAgo(0);document.getElementById('dFrom').value=st.from;document.getElementById('dTo').value=st.to}
   shown=PAGE;render()});
+/* empty "Today": the RRC posts about a day behind, so offer the latest posted day */
+function latestPosted(){let m='';for(const r of all){const ds=st.basis==='filed'?[r.submitted]:st.basis==='approved'?[r.approvedOn]:[r.submitted,r.approvedOn];for(const d of ds)if(d&&d>m&&d<=TODAY_ISO)m=d}return m}
+function emptyMsg(){
+  const lp=latestPosted();
+  if(st.range==='0'&&lp&&lp<TODAY_ISO)return `The RRC hasn't posted today's permits yet — it runs about a day behind.<br>Latest posted: <b>${fmtDate(lp)}</b><br><button class="lbtn" id="showLatest" data-d="${lp}">Show ${esc(fmtDate(lp))}</button>`;
+  return 'No permits match these filters.';
+}
+document.getElementById('empty').addEventListener('click',e=>{const b=e.target.closest('#showLatest');if(!b)return;
+  st.range='custom';st.from=st.to=b.dataset.d;document.getElementById('dFrom').value=st.from;document.getElementById('dTo').value=st.to;shown=PAGE;render()});
 document.getElementById('dFrom').addEventListener('change',e=>{st.from=e.target.value;shown=PAGE;render()});
 document.getElementById('dTo').addEventListener('change',e=>{st.to=e.target.value;shown=PAGE;render()});
 let qt;document.getElementById('q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{st.q=e.target.value.trim().toLowerCase();shown=PAGE;render()},150)});
