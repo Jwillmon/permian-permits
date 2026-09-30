@@ -694,7 +694,9 @@ function drawMap(){
   ensureLeaflet().then(()=>{
     if(!map){
       map=L.map('map',{preferCanvas:true}).setView([31.8,-102.3],7);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:18,subdomains:'abcd',attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}).addTo(map);
+      const ESRI='https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_';
+      L.tileLayer(ESRI+'Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,maxNativeZoom:16,attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'}).addTo(map);
+      L.tileLayer(ESRI+'Reference/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,maxNativeZoom:16}).addTo(map);
       mapLayer=L.layerGroup().addTo(map);
       ensureCounties().then(gj=>{
         countyLayer=L.geoJSON(gj,{style:countyStyle,onEachFeature:(f,l)=>{
