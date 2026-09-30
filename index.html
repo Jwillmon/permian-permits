@@ -80,6 +80,12 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 .linkbtn{border:0;background:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;padding:0 6px}
 .filters .chips{margin:0;flex:1;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;gap:6px;padding-bottom:2px}
 .fltbtn{display:none}
+.viewbar{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.mapcard{padding:0}
+#map{height:calc(100vh - 230px);min-height:440px;border-radius:12px;z-index:1}
+.leaflet-popup-content{font:13px/1.4 'Inter',system-ui,sans-serif}
+.leaflet-popup-content b{font-weight:600}
+.leaflet-popup-content a{color:var(--accent);cursor:pointer;font-weight:600}
 /* toolbar */
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 .search{position:relative;flex:1 1 260px;min-width:200px}
@@ -194,6 +200,7 @@ tbody tr:last-child td{border-bottom:0}
   .seg.sm{margin-left:0}
   .frow{padding:10px 12px}
   .fltbtn{display:inline-flex}
+  #map{height:70vh;min-height:360px}
   .filters:not(.open) .frow.more{display:none}
   .stats{gap:8px;margin-bottom:12px}
   .stat{padding:10px 12px}
@@ -260,7 +267,12 @@ tbody tr:last-child td{border-bottom:0}
     </div>
   </section>
 
-  <div class="card">
+  <div class="viewbar">
+    <div class="seg" id="viewSeg"><button data-v="list">List</button><button data-v="map">Map</button></div>
+    <span class="sub" id="mapNote"></span>
+  </div>
+  <div class="card mapcard" id="mapCard" hidden><div id="map"></div></div>
+  <div class="card" id="listCard">
     <div class="tbl-wrap">
       <table>
         <thead><tr>
@@ -309,7 +321,7 @@ const PERMIAN_D=['7C','08','8A'];
 const normDist=d=>{d=String(d||'').trim().toUpperCase().replace(/^0+(?=\w)/,'');return /^\d$/.test(d)?'0'+d:d};
 const inRegion=(r,reg)=>reg==='all'?true:reg==='permian'?PERMIAN_D.includes(r.dist):r.dist===reg;
 let all=[], view=[], shown=PAGE;
-const st={type:'',status:'',region:'permian',county:'',range:'',basis:'any',from:'',to:'',q:'',sort:'date',asc:false};
+const st={view:'list',type:'',status:'',region:'permian',county:'',range:'',basis:'any',from:'',to:'',q:'',sort:'date',asc:false};
 
 /* theme */
 (function(){let t=null;try{t=localStorage.getItem('pp-theme')}catch(e){}
@@ -358,6 +370,7 @@ function mapRow(r){
     approvedOn:apprOk, submitted:sub, date:(approved&&apprOk)||sub,
     district:g(r,'District'), dist:normDist(g(r,'District')), section:sec, block:blk, survey:sur, abstract:abs,
     loc:[sec&&('Sec '+sec),blk&&('Blk '+blk),sur].filter(Boolean).join(' · '),
+    lat:parseFloat(g(r,'Latitude')), lon:parseFloat(g(r,'Longitude')), bhLat:parseFloat(g(r,'BH Latitude')), bhLon:parseFloat(g(r,'BH Longitude')),
     depth:g(r,'Depth').replace(/\D/g,''), api:g(r,'API #'), profile:g(r,'Wellbore Profile'),
     queue:g(r,'RRC Queue'), flag:g(r,'Flag')!=='', notes:g(r,'Notes'), scraped:g(r,'Scraped At'),
   };
@@ -440,6 +453,8 @@ function fillSelects(){
 }
 function syncSegs(){
   document.querySelectorAll('#statusSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.status));
+  document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.view));
+  document.getElementById('mapCard').hidden=st.view!=='map';document.getElementById('listCard').hidden=st.view==='map';
   document.querySelectorAll('#rangeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.range));
   document.querySelectorAll('#basisSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.basis));
   document.getElementById('basisSeg').style.display=st.range===''?'none':'';
@@ -524,9 +539,49 @@ function paint(){
   document.getElementById('tbody').innerHTML=tb;
   document.getElementById('cards').innerHTML=cd;
   document.getElementById('empty').hidden=view.length>0;
+  drawMap();
   document.getElementById('footCount').textContent=`Showing ${rows.length.toLocaleString()} of ${view.length.toLocaleString()} permits`;
   const more=document.getElementById('moreBtn');more.hidden=view.length<=shown;
 }
+/* map */
+let leafletP=null,map=null,mapLayer=null,mapKey='';
+function ensureLeaflet(){
+  if(leafletP)return leafletP;
+  leafletP=new Promise((res,rej)=>{
+    const css=document.createElement('link');css.rel='stylesheet';css.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';document.head.appendChild(css);
+    const js=document.createElement('script');js.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';js.onload=res;js.onerror=rej;document.head.appendChild(js);
+  });
+  return leafletP;
+}
+const hasXY=r=>isFinite(r.lat)&&isFinite(r.lon)&&r.lat>25&&r.lat<37&&r.lon<-93&&r.lon>-107;
+function drawMap(){
+  const note=document.getElementById('mapNote');
+  if(st.view!=='map'){note.textContent='';return}
+  const pts=view.filter(hasXY);
+  note.textContent=pts.length?`${pts.length.toLocaleString()} of ${view.length.toLocaleString()} permits have map coordinates`:'Map coordinates are still loading from the RRC; check back after the next update.';
+  ensureLeaflet().then(()=>{
+    if(!map){
+      map=L.map('map',{preferCanvas:true}).setView([31.8,-102.3],7);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+      mapLayer=L.layerGroup().addTo(map);
+    }
+    map.invalidateSize();
+    mapLayer.clearLayers();
+    const css=getComputedStyle(document.documentElement);
+    pts.forEach(r=>{
+      const col=css.getPropertyValue(TYPE_COLOR[r.type]||'--t-other').trim()||'#6b7280';
+      if(isFinite(r.bhLat)&&isFinite(r.bhLon)&&(r.bhLat!==r.lat||r.bhLon!==r.lon))
+        L.polyline([[r.lat,r.lon],[r.bhLat,r.bhLon]],{color:col,weight:2,opacity:.7}).addTo(mapLayer);
+      const m=L.circleMarker([r.lat,r.lon],{radius:r.status==='APPROVED'?5:6,color:col,weight:r.status==='APPROVED'?1:2,fillColor:col,fillOpacity:r.status==='APPROVED'?.8:.25});
+      m.bindPopup(`<b>${esc(r.lease)} ${esc(r.well)}</b><br>${esc(opName(r.operator))}<br>${esc(r.type)} · ${r.status==='APPROVED'?'Approved':'Filed'} ${fmtDate(r.date)}<br><a data-open="${esc(r.statusNo)}">Details →</a>`);
+      m.addTo(mapLayer);
+    });
+    const key=[st.region,st.county,st.type,st.status,st.range,st.from,st.to,st.q].join('|');
+    if(key!==mapKey&&pts.length){mapKey=key;map.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lon])),{padding:[30,30],maxZoom:12})}
+  }).catch(()=>{note.textContent='The map could not load. Check your connection.'});
+}
+document.getElementById('map').addEventListener('click',e=>{const a=e.target.closest('[data-open]');if(!a)return;const r=all.find(x=>x.statusNo===a.dataset.open);if(r)openDrawer(r)});
+document.getElementById('viewSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.view=b.dataset.v;render()});
 function showMore(){shown+=PAGE;paint()}
 
 /* detail drawer */
@@ -588,10 +643,10 @@ function exportCsv(){
 }
 
 /* shareable filters in the URL */
-function writeHash(){const p=new URLSearchParams();Object.entries(st).forEach(([k,v])=>{if(v!==''&&!(k==='sort'&&v==='date')&&!(k==='asc'&&v===false)&&!(k==='basis'&&v==='any')&&!(k==='region'&&v==='permian')&&!((k==='from'||k==='to')&&st.range!=='custom'))p.set(k,v)});
+function writeHash(){const p=new URLSearchParams();Object.entries(st).forEach(([k,v])=>{if(v!==''&&!(k==='sort'&&v==='date')&&!(k==='asc'&&v===false)&&!(k==='basis'&&v==='any')&&!(k==='region'&&v==='permian')&&!(k==='view'&&v==='list')&&!((k==='from'||k==='to')&&st.range!=='custom'))p.set(k,v)});
   const h=p.toString();history.replaceState(null,'',h?'#'+h:location.pathname)}
 function readHash(){const p=new URLSearchParams(location.hash.slice(1));
-  ['type','status','region','county','range','basis','from','to','q','sort'].forEach(k=>{if(p.has(k))st[k]=p.get(k)});st.asc=p.get('asc')==='true';
+  ['view','type','status','region','county','range','basis','from','to','q','sort'].forEach(k=>{if(p.has(k))st[k]=p.get(k)});st.asc=p.get('asc')==='true';
   document.getElementById('q').value=st.q;document.getElementById('county').value=st.county;
   document.getElementById('dFrom').value=st.from;document.getElementById('dTo').value=st.to;document.getElementById('customWrap').hidden=st.range!=='custom';
   syncSegs();}
