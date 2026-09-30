@@ -321,7 +321,7 @@ const PERMIAN_D=['7C','08','8A'];
 const normDist=d=>{d=String(d||'').trim().toUpperCase().replace(/^0+(?=\w)/,'');return /^\d$/.test(d)?'0'+d:d};
 const inRegion=(r,reg)=>reg==='all'?true:reg==='permian'?PERMIAN_D.includes(r.dist):r.dist===reg;
 let all=[], view=[], shown=PAGE;
-const st={view:'list',type:'',status:'',region:'permian',county:'',range:'',basis:'any',from:'',to:'',q:'',sort:'date',asc:false};
+const st={view:'list',type:'',status:'',region:'all',county:'',range:'',basis:'any',from:'',to:'',q:'',sort:'date',asc:false};
 
 /* theme */
 (function(){let t=null;try{t=localStorage.getItem('pp-theme')}catch(e){}
@@ -441,7 +441,7 @@ function fillSelects(){
   const n=k=>(rc[k]||0).toLocaleString();
   const perm=PERMIAN_D.reduce((a,k)=>a+(rc[k]||0),0);
   document.getElementById('region').innerHTML=
-    `<option value="permian">Permian Basin · 7C, 08, 8A (${perm.toLocaleString()})</option><option value="all">All Texas (${base.length.toLocaleString()})</option>`+
+    `<option value="all">All Texas (${base.length.toLocaleString()})</option><option value="permian">Permian Basin · 7C, 08, 8A (${perm.toLocaleString()})</option>`+
     `<optgroup label="RRC districts">`+DISTRICTS.map(([k,c])=>`<option value="${k}">District ${k} · ${c} (${n(k)})</option>`).join('')+`</optgroup>`;
   document.getElementById('region').value=st.region;
   const inReg=base.filter(r=>inRegion(r,st.region));
@@ -459,9 +459,9 @@ function syncSegs(){
   document.querySelectorAll('#basisSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.basis));
   document.getElementById('basisSeg').style.display=st.range===''?'none':'';
   document.getElementById('customWrap').hidden=st.range!=='custom';
-  const nMore=[st.region!=='permian',st.county,st.status,st.type].filter(Boolean).length;
+  const nMore=[st.region!=='all',st.county,st.status,st.type].filter(Boolean).length;
   document.getElementById('fltBtn').textContent=(document.querySelector('.filters').classList.contains('open')?'Fewer filters':'More filters')+(nMore?` (${nMore})`:'');
-  document.getElementById('clearBtn').hidden=!(st.type||st.status||st.county||st.range||st.q||st.region!=='permian');
+  document.getElementById('clearBtn').hidden=!(st.type||st.status||st.county||st.range||st.q||st.region!=='all');
 }
 function render(){
   fillSelects();syncSegs();
@@ -643,7 +643,7 @@ function exportCsv(){
 }
 
 /* shareable filters in the URL */
-function writeHash(){const p=new URLSearchParams();Object.entries(st).forEach(([k,v])=>{if(v!==''&&!(k==='sort'&&v==='date')&&!(k==='asc'&&v===false)&&!(k==='basis'&&v==='any')&&!(k==='region'&&v==='permian')&&!(k==='view'&&v==='list')&&!((k==='from'||k==='to')&&st.range!=='custom'))p.set(k,v)});
+function writeHash(){const p=new URLSearchParams();Object.entries(st).forEach(([k,v])=>{if(v!==''&&!(k==='sort'&&v==='date')&&!(k==='asc'&&v===false)&&!(k==='basis'&&v==='any')&&!(k==='region'&&v==='all')&&!(k==='view'&&v==='list')&&!((k==='from'||k==='to')&&st.range!=='custom'))p.set(k,v)});
   const h=p.toString();history.replaceState(null,'',h?'#'+h:location.pathname)}
 function readHash(){const p=new URLSearchParams(location.hash.slice(1));
   ['view','type','status','region','county','range','basis','from','to','q','sort'].forEach(k=>{if(p.has(k))st[k]=p.get(k)});st.asc=p.get('asc')==='true';
@@ -656,7 +656,7 @@ document.getElementById('chips').addEventListener('click',e=>{const b=e.target.c
 document.getElementById('statusSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.status=b.dataset.v;shown=PAGE;render()});
 document.getElementById('basisSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.basis=b.dataset.v;shown=PAGE;render()});
 document.getElementById('fltBtn').addEventListener('click',()=>{const f=document.querySelector('.filters');f.classList.toggle('open');document.getElementById('fltBtn').setAttribute('aria-expanded',f.classList.contains('open'));syncSegs()});
-document.getElementById('clearBtn').addEventListener('click',()=>{Object.assign(st,{type:'',status:'',region:'permian',county:'',range:'',basis:'any',from:'',to:'',q:''});document.getElementById('q').value='';shown=PAGE;render()});
+document.getElementById('clearBtn').addEventListener('click',()=>{Object.assign(st,{type:'',status:'',region:'all',county:'',range:'',basis:'any',from:'',to:'',q:''});document.getElementById('q').value='';shown=PAGE;render()});
 document.getElementById('county').addEventListener('change',e=>{st.county=e.target.value;shown=PAGE;render()});
 document.getElementById('region').addEventListener('change',e=>{st.region=e.target.value;st.county='';shown=PAGE;render()});
 document.getElementById('rangeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.range=b.dataset.v;const c=st.range==='custom';
