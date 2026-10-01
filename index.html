@@ -390,7 +390,7 @@ function apply(raw){
   const last=all.map(r=>r.scraped).filter(Boolean).sort().pop();
   if(last){const d=new Date(last.replace(' UTC','Z').replace(' ','T'));
     if(!isNaN(d)){const when=d.toLocaleString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' CT';
-      document.getElementById('lastUpdate').innerHTML='<span class="long">Updated </span>'+when;
+      document.getElementById('lastUpdate').innerHTML='<span class="long">Updated </span>'+when;lastCheck=when;
       const hrs=(Date.now()-d)/36e5;
       // Runs are ~6 AM, 11 AM and 7 PM CT, so the longest normal gap is ~11 hours.
       document.querySelector('.dot').classList.toggle('late',hrs>14);
@@ -734,7 +734,7 @@ function drawMap(){
   const pts=view.filter(hasXY),apx=view.filter(r=>!hasXY(r)&&approx[r.statusNo]);
   const miss=view.length-pts.length-apx.length;
   note.textContent=`${(pts.length+apx.length).toLocaleString()} of ${view.length.toLocaleString()} permits on the map`+(apx.length?` (${apx.length.toLocaleString()} placed at their section center — dashed pins)`:'')+(miss&&map&&map.getZoom()<7?` · zoom in to place ${miss.toLocaleString()} more`:'')+' · click a county to filter';
-  if(!view.length&&st.range==='0'){const lp=latestPosted();if(lp&&lp<TODAY_ISO)note.textContent=`The RRC hasn't posted today's permits yet — latest posted: ${fmtDate(lp)} (pick 2 days to see them)`}
+  if(!view.length&&st.range==='0'){const lp=latestPosted();if(lp&&lp<TODAY_ISO)note.textContent=`The RRC hasn't posted today's permits yet — latest posted: ${fmtDate(lp)} (pick 2 days to see them)`+(lastCheck?` · site last updated from the RRC: ${lastCheck}`:'')}
   ensureLeaflet().then(()=>{
     if(!map){
       map=L.map('map',{preferCanvas:true}).setView([31.8,-102.3],7);
@@ -870,10 +870,11 @@ document.getElementById('rangeSeg').addEventListener('click',e=>{const b=e.targe
   if(c&&!st.from){st.from=daysAgo(7);st.to=daysAgo(0);document.getElementById('dFrom').value=st.from;document.getElementById('dTo').value=st.to}
   shown=PAGE;render()});
 /* empty "Today": the RRC posts about a day behind, so offer the latest posted day */
+var lastCheck;
 function latestPosted(){let m='';for(const r of all){const ds=st.basis==='filed'?[r.submitted]:st.basis==='approved'?[r.approvedOn]:[r.submitted,r.approvedOn];for(const d of ds)if(d&&d>m&&d<=TODAY_ISO)m=d}return m}
 function emptyMsg(){
   const lp=latestPosted();
-  if(st.range==='0'&&lp&&lp<TODAY_ISO)return `The RRC hasn't posted today's permits yet — it runs about a day behind.<br>Latest posted: <b>${fmtDate(lp)}</b><br><button class="lbtn" id="showLatest" data-d="${lp}">Show ${esc(fmtDate(lp))}</button>`;
+  if(st.range==='0'&&lp&&lp<TODAY_ISO)return `The RRC hasn't posted today's permits yet — it runs about a day behind.<br>Latest posted: <b>${fmtDate(lp)}</b>${lastCheck?`<br><span style="font-size:13px">This site last updated from the RRC: ${esc(lastCheck)}</span>`:''}<br><button class="lbtn" id="showLatest" data-d="${lp}">Show ${esc(fmtDate(lp))}</button>`;
   return 'No permits match these filters.';
 }
 document.getElementById('empty').addEventListener('click',e=>{const b=e.target.closest('#showLatest');if(!b)return;
