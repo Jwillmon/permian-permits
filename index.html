@@ -414,8 +414,9 @@ function apply(raw){
     if(!isNaN(d)){const when=d.toLocaleString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' CT';
       document.getElementById('lastUpdate').innerHTML='<span class="long">Updated </span>'+when;lastCheck=when;
       const hrs=(Date.now()-d)/36e5;
-      // Scheduled every 2 hours. GitHub often skips runs, so updates usually
-      // land a few times a day; turn the dot amber after 14 hours.
+      // Six runs a day, about every 4 hours, at odd minutes. A missed slot is
+      // caught up on the next one, so one skip is only ~8 hours. The dot waits
+      // until 14 hours (about three gaps) and the banner until 30.
       document.querySelector('.dot').classList.toggle('late',hrs>14);
       const b=document.getElementById('staleBanner');b.hidden=!(hrs>30);
       if(hrs>30)b.innerHTML=`<b>Data delayed.</b> Last update ${when} (${Math.round(hrs)} hours ago). The Railroad Commission's download site may be down; the tracker catches up automatically on the next successful run.`;}}
