@@ -13,6 +13,7 @@
   --border:#e5e7eb; --border-2:#d1d5db;
   --accent:#9b1c14; --accent-soft:#fdf1f0; --accent-ink:#ffffff;
   --appr:#15803d; --appr-bg:#ecfdf3; --pend:#b45309; --pend-bg:#fffbeb;
+  --done:#0f766e; --done-bg:#f0fdfa;
   --shadow:0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06);
   --t-new:#2563eb; --t-amend:#7c3aed; --t-recomp:#0d9488; --t-reclass:#ca8a04; --t-reenter:#ea580c; --t-side:#db2777; --t-deep:#0891b2; --t-plug:#65a30d; --t-other:#6b7280;
 }
@@ -22,6 +23,7 @@
   --border:#2a2f3a; --border-2:#374151;
   --accent:#ef5a4c; --accent-soft:#2a1715; --accent-ink:#ffffff;
   --appr:#4ade80; --appr-bg:#0f2a1b; --pend:#fbbf24; --pend-bg:#2b2110;
+  --done:#5eead4; --done-bg:#132e2a;
   --shadow:none;
   --t-new:#60a5fa; --t-amend:#a78bfa; --t-recomp:#2dd4bf; --t-reclass:#facc15; --t-reenter:#fb923c; --t-side:#f472b6; --t-deep:#22d3ee; --t-plug:#a3e635; --t-other:#9ca3af;
 }
@@ -137,7 +139,9 @@ tbody tr:last-child td{border-bottom:0}
 .pill.approved{color:var(--appr);background:var(--appr-bg)}
 .pill.pending{color:var(--pend);background:var(--pend-bg)}
 .pill.stalled{color:var(--muted);background:var(--hover)}
+.pill.done{color:var(--done);background:var(--done-bg)}
 .qsub{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap}
+.qsub.done,.sub.done{color:var(--done)}
 .dot.late{background:var(--pend);box-shadow:0 0 0 3px var(--pend-bg)}
 .banner{background:var(--pend-bg);color:var(--ink-2);border:1px solid color-mix(in srgb,var(--pend) 35%,var(--border));border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px}
 .banner b{color:var(--pend)}
@@ -205,6 +209,8 @@ tbody tr:last-child td{border-bottom:0}
   .seg.sm{margin-left:0}
   .frow{padding:10px 12px}
   .fltbtn{display:inline-flex}
+  #statusSeg{flex-wrap:wrap;height:auto;width:100%}
+  #statusSeg button{white-space:nowrap}
   #map{height:70vh;min-height:360px}
   .filters:not(.open) .frow.more{display:none}
   .stats{gap:8px;margin-bottom:12px}
@@ -263,7 +269,7 @@ tbody tr:last-child td{border-bottom:0}
       <select id="county" aria-label="County"><option value="">All counties</option></select>
       <span class="flabel gap">Status</span>
       <div class="seg" id="statusSeg">
-        <button data-v="">All</button><button data-v="APPROVED">Approved</button><button data-v="PENDING">Pending</button><button data-v="STALLED" title="Pending more than 30 days with no approval">30+ days</button>
+        <button data-v="">All</button><button data-v="APPROVED">Approved</button><button data-v="PENDING">Pending</button><button data-v="STALLED" title="Pending more than 30 days with no approval">30+ days</button><button data-v="COMPLETED" id="compBtn" hidden title="Wells with a completion on file">Completed</button>
       </div>
     </div>
     <div class="frow more">
@@ -311,7 +317,8 @@ tbody tr:last-child td{border-bottom:0}
 const SHEET_ID='14YyRf-In41XXFH4XNWF1hfQPa1597ZiBcYUqiqEnxM0';
 const TYPE_ORDER=['New Drill','Amendment','Recompletion','Reclass','Re-Enter','Sidetrack','Deepen','Plug Back','Reapplied','Field Transfer','Other'];
 const TYPE_COLOR={'New Drill':'--t-new','Amendment':'--t-amend','Recompletion':'--t-recomp','Reclass':'--t-reclass','Re-Enter':'--t-reenter','Sidetrack':'--t-side','Deepen':'--t-deep','Plug Back':'--t-plug'};
-const TODAY_ISO=new Date().toISOString().slice(0,10);
+// Calendar day in Central time. UTC would already be "tomorrow" after 7pm CT.
+const TODAY_ISO=new Date().toLocaleDateString('en-CA',{timeZone:'America/Chicago'});
 const MOBILE=matchMedia('(max-width:720px)');
 const PAGE=MOBILE.matches?80:250;
 // Pending filings with no approval after this many days are shown as "30+ days".
@@ -339,7 +346,17 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const title=s=>String(s||'').toLowerCase().replace(/\b[a-z]/g,m=>m.toUpperCase());
 const KEEP=new Set(['LLC','LP','LLP','INC','LTD','II','III','IV','USA','XTO','EOG','BTA','OXY','VTX','PDEH','SM','CO','OOA','US','TX','NM']);
 const opName=s=>title(s).replace(/\b[\w&]+\b/g,w=>KEEP.has(w.toUpperCase())?w.toUpperCase():w);
-const fmtDate=d=>{if(!d)return'—';const[y,m,dd]=d.split('-');return new Date(+y,+m-1,+dd).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
+const fmtDate=d=>{if(!d)return'—';const m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);if(!m)return String(d);return new Date(+m[1],+m[2]-1,+m[3]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
+const isoDate=s=>{s=String(s||'').trim();if(!s)return'';
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(m)return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+  m=s.match(/Date\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);if(m)return `${m[1]}-${String(+m[2]+1).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;
+  return ''};
+// Blank, or an explicit "not completed", means there is nothing to show.
+const negComp=s=>{const n=String(s||'').toLowerCase().replace(/[_/]+/g,' ').replace(/\s+/g,' ').trim();
+  return !n||/^(n|no|none|not completed|not complete|incomplete|uncompleted|pending|no completion|false|0|n a|na)$/.test(n)};
+const genericDone=s=>/^(completed|complete|yes|y|true)$/i.test(String(s||'').trim());
+const completionLabel=r=>{const s=(r.completionStatus||'').trim();return s&&!genericDone(s)?s:'Completed'};
 const fmtNum=n=>n?Number(n).toLocaleString('en-US'):'';
 const typeKey=t=>{t=(t||'').trim();if(/^re-?enter$/i.test(t))return'Re-Enter';return TYPE_ORDER.includes(t)?t:(t?'Other':'Other')};
 
@@ -355,7 +372,9 @@ function parseSheet(text){
   const t=json.table;if(!t||!t.rows)return[];
   let cols=t.cols.map(c=>c.label),rows=t.rows;
   if(!cols[0]){cols=rows[0].c.map(c=>c?(c.v||''):'');rows=rows.slice(1)}
-  return rows.map(r=>{const o={};cols.forEach((c,i)=>{const cell=r.c[i];o[c]=cell?(cell.f!=null&&typeof cell.v!=='string'?cell.f:(cell.v??'')):''});return o});
+  return rows.map(r=>{const o={};cols.forEach((c,i)=>{const cell=r.c[i];
+    // Numbers keep their full value. Other non-strings (dates) keep the formatted text.
+    o[c]=cell?(typeof cell.v==='number'?cell.v:(cell.f!=null&&typeof cell.v!=='string'?cell.f:(cell.v??''))):''});return o});
 }
 const g=(r,k)=>String(r[k]??'').trim();
 
@@ -376,8 +395,11 @@ function mapRow(r){
     district:g(r,'District'), dist:normDist(g(r,'District')), section:sec, block:blk, survey:sur, abstract:abs,
     loc:[sec&&('Sec '+sec),blk&&('Blk '+blk),sur].filter(Boolean).join(' · '),
     lat:parseFloat(g(r,'Latitude')), lon:parseFloat(g(r,'Longitude')), bhLat:parseFloat(g(r,'BH Latitude')), bhLon:parseFloat(g(r,'BH Longitude')),
+    approxLat:parseFloat(g(r,'Approx Latitude')), approxLon:parseFloat(g(r,'Approx Longitude')),
     depth:g(r,'Depth').replace(/\D/g,''), api:g(r,'API #'), profile:g(r,'Wellbore Profile'),
     queue:g(r,'RRC Queue'), flag:g(r,'Flag')!=='', notes:g(r,'Notes'), scraped:g(r,'Scraped At'),
+    completionStatus:g(r,'Completion Status'), completionDate:isoDate(g(r,'Completion Date'))||g(r,'Completion Date'),
+    completed:!!isoDate(g(r,'Completion Date'))||!negComp(g(r,'Completion Status')),
   };
 }
 function isJunk(r){return !r.county || (/^[A-Z_]+$/.test(r.docNo)&&r.docNo.includes('_'))}
@@ -392,7 +414,8 @@ function apply(raw){
     if(!isNaN(d)){const when=d.toLocaleString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' CT';
       document.getElementById('lastUpdate').innerHTML='<span class="long">Updated </span>'+when;lastCheck=when;
       const hrs=(Date.now()-d)/36e5;
-      // Runs are ~6 AM, 11 AM and 7 PM CT, so the longest normal gap is ~11 hours.
+      // Scheduled every 2 hours. GitHub often skips runs, so updates usually
+      // land a few times a day; turn the dot amber after 14 hours.
       document.querySelector('.dot').classList.toggle('late',hrs>14);
       const b=document.getElementById('staleBanner');b.hidden=!(hrs>30);
       if(hrs>30)b.innerHTML=`<b>Data delayed.</b> Last update ${when} (${Math.round(hrs)} hours ago). The Railroad Commission's download site may be down; the tracker catches up automatically on the next successful run.`;}}
@@ -425,11 +448,11 @@ function inRange(r){
 }
 function matches(r,skip){
   if(skip!=='type'&&st.type&&r.type!==st.type)return false;
-  if(skip!=='status'&&st.status&&r.status!==st.status)return false;
+  if(skip!=='status'&&st.status){if(st.status==='COMPLETED'? !r.completed : r.status!==st.status)return false}
   if(skip!=='geo'&&!inRegion(r,st.region))return false;
   if(skip!=='geo'&&st.county&&r.county!==st.county)return false;
   if(!inRange(r))return false;
-  if(st.q){const h=[r.operator,r.lease,r.well,r.county,r.survey,r.api,r.statusNo,r.type].join(' ').toLowerCase();
+  if(st.q){const h=[r.operator,r.lease,r.well,r.county,r.survey,r.api,r.statusNo,r.type,r.completed?r.completionStatus:'',r.completed?r.completionDate:''].join(' ').toLowerCase();
     if(!st.q.split(/\s+/).every(w=>h.includes(w)))return false}
   return true;
 }
@@ -467,6 +490,8 @@ function syncSegs(){
   const nMore=[st.region!=='all',st.county,st.status,st.type].filter(Boolean).length;
   document.getElementById('fltBtn').textContent=(document.querySelector('.filters').classList.contains('open')?'Fewer filters':'More filters')+(nMore?` (${nMore})`:'');
   document.getElementById('clearBtn').hidden=!(st.type||st.status||st.county||st.range||st.q||st.region!=='all');
+  // Hide until some well is actually completed, so today's sheet looks unchanged.
+  document.getElementById('compBtn').hidden=!(all.some(r=>r.completed)||st.status==='COMPLETED');
 }
 function render(){
   fillSelects();syncSegs();
@@ -503,10 +528,12 @@ function render(){
 function pillHtml(r){const lbl={APPROVED:'Approved',PENDING:'Pending',STALLED:'Pending 30+ days'}[r.status];
   return `<span class="pill ${r.status.toLowerCase()}">${lbl}</span>`}
 function queueHtml(r){return r.status!=='APPROVED'&&r.queue?`<div class="qsub" title="RRC review queue">${esc(r.queue)}</div>`:''}
+function completionHtml(r){if(!r.completed)return'';const when=r.completionDate?fmtDate(r.completionDate):'';
+  return `<div class="qsub done">${esc(completionLabel(r))}${when&&when!=='—'?` · ${esc(when)}`:''}</div>`}
 function rowHtml(r,i,grouped){
   const tcol=`var(${TYPE_COLOR[r.type]||'--t-other'})`;
   return `<tr data-i="${i}" style="--tc:${tcol}">
-    <td>${grouped?'':`<div class="dcell">${fmtDate(r.date)}</div>`}${pillHtml(r)}${queueHtml(r)}</td>
+    <td>${grouped?'':`<div class="dcell">${fmtDate(r.date)}</div>`}${pillHtml(r)}${queueHtml(r)}${completionHtml(r)}</td>
     <td><div class="op" title="${esc(r.operator)}">${esc(opName(r.operator))}${r.flag?'<span class="star">★</span>':''}</div></td>
     <td><div class="lease">${esc(r.lease)}</div><div class="sub">Well ${esc(r.well||'—')}${r.profile?' · '+esc(r.profile):''}</div></td>
     <td>${esc(r.county)}</td>
@@ -526,7 +553,7 @@ function cardHtml(r,i){
       <div class="lease">${esc(r.lease)} <span class="sub">· ${esc(r.well)}</span></div></div>
       ${pillHtml(r)}</div>
     <div class="meta"><span class="type">${esc(r.type)}</span>
-      <span class="sub">${esc(r.county)}</span><span class="sub">${fmtDate(r.date)}</span>${r.depth?`<span class="sub">${fmtNum(r.depth)}'</span>`:''}</div>
+      <span class="sub">${esc(r.county)}</span><span class="sub">${fmtDate(r.date)}</span>${r.depth?`<span class="sub">${fmtNum(r.depth)}'</span>`:''}${r.completed?`<span class="sub done">${esc(completionLabel(r))}</span>`:''}</div>
     ${r.loc?`<div class="sub" style="margin-top:6px">${esc(r.loc)}</div>`:''}
   </div>`;
 }
@@ -586,7 +613,7 @@ const surveyStyle=()=>{const z=map?map.getZoom():0;return {color:'#9aa1aa',weigh
 const tr=s=>String(s||'').trim();
 function blockKey(p){const b=tr(p.LEVEL2_BLO);return b?normLoc(p.LEVEL1_SUR)+'|B'+normLoc(b):normLoc(p.LEVEL1_SUR)+'|A'+normLoc(p.ABSTRACT_L)}
 function loadSurveys(){
-  if(!map||!surveyLayer)return;
+  if(!map||!surveyLayer||st.view!=='map')return;
   const z=map.getZoom(),note=document.getElementById('gridNote');
   if(countyLayer)countyLayer.setStyle(countyStyle);
   if(z<SURVEY_ZOOM){[surveyLayer,secLabels,blockLines].forEach(l=>map.hasLayer(l)&&map.removeLayer(l));if(note)note.textContent='Zoom in to see survey blocks & sections';return}
@@ -678,11 +705,17 @@ function blockPopup(f){
     (county&&normLoc(r.county)===normLoc(county)&&((r.abstract&&abs.has(digits(r.abstract)))||(!r.abstract&&blk&&firstTok(r.block)===blk&&(!r.survey||normLoc(r.survey).startsWith(sv))))));
   return `<div class="survey-pop"><table>${row('Block',tr(p.LEVEL2_BLO)||'—')}${row('Survey',tr(p.LEVEL1_SUR))}${row('Sections',String(fs.length))}${row('County',county)}</table>${permitList(hits)}<div class="sub" style="margin-top:4px">Zoom in to see individual sections</div></div>`;
 }
-/* place permits that have no GPS yet at the center of their survey section (abstract, or section + block), per county in view; results cached in this browser */
+/* Dashed pins: use Approx Latitude/Longitude from the sheet when the scraper has
+   already computed the section center. If those cells are empty, fall back to
+   looking the section up in OTLS (cached in this browser). */
 let approx={};try{approx=JSON.parse(localStorage.getItem('pp-approx-v1')||'{}')}catch(e){}
 const geoDone=new Set();let geoBusy=false;
 const nAbs=s=>normLoc(s).replace(/^A(?=[A-Z]?\d)/,'').replace(/^0+/,'');
-const needsGeo=r=>!hasXY(r)&&!approx[r.statusNo]&&r.county&&(r.abstract||r.section);
+const inTexas=(lat,lon)=>isFinite(lat)&&isFinite(lon)&&lat>25&&lat<37&&lon<-93&&lon>-107;
+const hasXY=r=>inTexas(r.lat,r.lon);
+const sheetApprox=r=>inTexas(r.approxLat,r.approxLon)?[r.approxLat,r.approxLon]:null;
+const approxPoint=r=>sheetApprox(r)||approx[r.statusNo]||null;
+const needsGeo=r=>!hasXY(r)&&!sheetApprox(r)&&!approx[r.statusNo]&&r.county&&(r.abstract||r.section);
 async function geocodeVisible(){
   if(geoBusy||!map||!countyLayer||st.view!=='map')return;
   if(map.getZoom()<7&&!st.county)return;
@@ -727,11 +760,11 @@ function ensureLeaflet(){
   });
   return leafletP;
 }
-const hasXY=r=>isFinite(r.lat)&&isFinite(r.lon)&&r.lat>25&&r.lat<37&&r.lon<-93&&r.lon>-107;
+const compLine=r=>r.completed?`<br><span class="sub">${esc(completionLabel(r))}${r.completionDate&&fmtDate(r.completionDate)!=='—'?` · ${esc(fmtDate(r.completionDate))}`:''}</span>`:'';
 function drawMap(){
   const note=document.getElementById('mapNote');
-  if(st.view!=='map'){note.textContent='';return}
-  const pts=view.filter(hasXY),apx=view.filter(r=>!hasXY(r)&&approx[r.statusNo]);
+  if(st.view!=='map'){note.textContent='';const g=document.getElementById('gridNote');if(g)g.textContent='';return}
+  const pts=view.filter(hasXY),apx=view.filter(r=>!hasXY(r)&&approxPoint(r));
   const miss=view.length-pts.length-apx.length;
   note.textContent=`${(pts.length+apx.length).toLocaleString()} of ${view.length.toLocaleString()} permits on the map`+(apx.length?` (${apx.length.toLocaleString()} placed at their section center — dashed pins)`:'')+(miss&&map&&map.getZoom()<7?` · zoom in to place ${miss.toLocaleString()} more`:'')+' · click a county to filter';
   if(!view.length&&st.range==='0'){const lp=latestPosted();if(lp&&lp<TODAY_ISO)note.textContent=`The RRC hasn't posted today's permits yet — latest posted: ${fmtDate(lp)} (pick 2 days to see them)`+(lastCheck?` · site last updated from the RRC: ${lastCheck}`:'')}
@@ -767,14 +800,14 @@ function drawMap(){
       if(isFinite(r.bhLat)&&isFinite(r.bhLon)&&(r.bhLat!==r.lat||r.bhLon!==r.lon))
         L.polyline([[r.lat,r.lon],[r.bhLat,r.bhLon]],{color:col,weight:2,opacity:.7}).addTo(mapLayer);
       const m=L.circleMarker([r.lat,r.lon],{radius:r.status==='APPROVED'?5:6,color:col,weight:r.status==='APPROVED'?1:2,fillColor:col,fillOpacity:r.status==='APPROVED'?.8:.25});
-      m.bindPopup(`<b>${esc(r.lease)} ${esc(r.well)}</b><br>${esc(opName(r.operator))}<br>${esc(r.type)} · ${r.status==='APPROVED'?'Approved':'Filed'} ${fmtDate(r.date)}<br><a data-open="${esc(r.statusNo)}">Details →</a>`);
+      m.bindPopup(`<b>${esc(r.lease)} ${esc(r.well)}</b><br>${esc(opName(r.operator))}<br>${esc(r.type)} · ${r.status==='APPROVED'?'Approved':'Filed'} ${fmtDate(r.date)}${compLine(r)}<br><a data-open="${esc(r.statusNo)}">Details →</a>`);
       m.addTo(mapLayer);
     });
     /* permits the RRC hasn't given GPS for yet: dashed pin at the center of their survey section */
     apx.forEach(r=>{
-      const col=css.getPropertyValue(TYPE_COLOR[r.type]||'--t-other').trim()||'#6b7280',c=approx[r.statusNo];
+      const col=css.getPropertyValue(TYPE_COLOR[r.type]||'--t-other').trim()||'#6b7280',c=approxPoint(r);
       const m=L.circleMarker(c,{radius:6,color:col,weight:2,dashArray:'3 2',fillColor:col,fillOpacity:.2});
-      m.bindPopup(`<b>${esc(r.lease)} ${esc(r.well)}</b><br>${esc(opName(r.operator))}<br>${esc(r.type)} · ${r.status==='APPROVED'?'Approved':'Filed'} ${fmtDate(r.date)}<br><span class="sub">Approximate: center of ${esc(r.loc||'its section')} (no GPS from the RRC yet)</span><br><a data-open="${esc(r.statusNo)}">Details →</a>`);
+      m.bindPopup(`<b>${esc(r.lease)} ${esc(r.well)}</b><br>${esc(opName(r.operator))}<br>${esc(r.type)} · ${r.status==='APPROVED'?'Approved':'Filed'} ${fmtDate(r.date)}<br><span class="sub">Approximate: center of ${esc(r.loc||'its section')} (no GPS from the RRC yet)</span>${compLine(r)}<br><a data-open="${esc(r.statusNo)}">Details →</a>`);
       m.addTo(mapLayer);
     });
     geocodeVisible();
@@ -807,10 +840,11 @@ function openDrawer(r){
   const tcol=`var(${TYPE_COLOR[r.type]||'--t-other'})`;
   document.getElementById('dBody').innerHTML=`
     <div class="d-tags">${pillHtml(r)}
-      <span class="type" style="--tc:${tcol}"><i></i>${esc(r.type)}</span>${r.profile?`<span class="sub">${esc(r.profile)}</span>`:''}</div>
+      <span class="type" style="--tc:${tcol}"><i></i>${esc(r.type)}</span>${r.profile?`<span class="sub">${esc(r.profile)}</span>`:''}${r.completed?'<span class="pill done">Completed</span>':''}</div>
     <dl class="grid">
       ${f('County',esc(r.county))}${f('District',esc(r.district))}
       ${f('Filed',fmtDate(r.submitted))}${f('Approved',r.approvedOn?fmtDate(r.approvedOn):'')}
+      ${r.completed?f('Completion status',esc(completionLabel(r)))+f('Completion date',r.completionDate?fmtDate(r.completionDate):''):''}
       ${f('Status #','<span class="mono">'+esc(r.statusNo)+'</span>')}${f('API','<span class="mono">'+esc(r.api)+'</span>')}
       ${f('Section',esc(r.section))}${f('Block',esc(r.block))}
       ${f('Survey',esc(r.survey),true)}
@@ -843,6 +877,7 @@ function closeDrawer(){document.getElementById('drawer').classList.remove('open'
 /* CSV */
 function exportCsv(){
   const cols=[['Date','date'],['Status','status'],['Type','type'],['Operator','operator'],['Lease','lease'],['Well','well'],['County','county'],['District','district'],['Section','section'],['Block','block'],['Survey','survey'],['Abstract','abstract'],['Depth','depth'],['API','api'],['Status #','statusNo'],['Filed','submitted'],['Approved','approvedOn']];
+  if(all.some(r=>r.completionStatus||r.completionDate))cols.push(['Completion Status','completionStatus'],['Completion Date','completionDate']);
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
   const csv=[cols.map(c=>q(c[0])).join(',')].concat(view.map(r=>cols.map(c=>q(r[c[1]])).join(','))).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
